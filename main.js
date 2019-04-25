@@ -275,6 +275,65 @@ const data = [
         },
       ],
     },
+    {
+      type: "&mut Vec<T>",
+      path: "std/vec/struct.Vec.html",
+      groups: [
+        {
+          comment: "Adding and removing single item",
+          items: [
+            "push (T)",
+            "pop () -> Option<T>",
+            "insert (usize, T)",
+            "remove (usize) -> T",
+            "swap_remove (usize) -> T",
+          ],
+        },
+        {
+          comment: "Extending",
+          items: [
+            "append (&mut Vec<T>)",
+            "extend_from_slice (&[T]) where T: Clone",
+          ],
+        },
+        {
+          comment: "Resizing",
+          items: [
+            "truncate (usize)",
+            "resize (usize, T) where T: Clone",
+            "resize_with (usize, () -> T)",
+          ],
+        },
+        {
+          comment: "Clearing",
+          items: [
+            "clear ()",
+            "retain ((&T) -> bool)",
+          ],
+        },
+        {
+          comment: "Removing or replacing range into iterator",
+          items: [
+            "drain  (RangeBounds<usize>) -> Iterator<T>",
+            "splice (RangeBounds<usize>, IntoIterator<Item = T>) -> Iterator<T>",
+          ],
+        },
+        {
+          comment: "Deduplicating",
+          items: [
+            "dedup () where T: PartialEq",
+            "dedup_by ((&mut T, &mut T) -> bool)",
+            "dedup_by_key ((&mut T) -> K) where K: PartialEq",
+          ],
+        },
+        {
+          comment: "Splitting off",
+          items: [
+            "split_off (usize) -> Vec<T>",
+          ],
+        },
+      ],
+    },
   ],
   [
     {
