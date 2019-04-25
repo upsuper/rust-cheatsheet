@@ -564,4 +564,4 @@ function $c(tag, text, className) {
   return element;
 }
 
-window.addEventListener("load", build);
+window.addEventListener("DOMContentLoaded", build);
