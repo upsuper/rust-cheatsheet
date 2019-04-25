@@ -533,6 +533,172 @@ const data = [
       ],
     },
   ],
+  [
+    {
+      type: "&str",
+      path: "std/primitive.str.html",
+      groups: [
+        {
+          comment: "Chars",
+          items: [
+            "chars () -> Iterator<Item = char>",
+            "char_indices () -> Iterator<Item = (usize, char)>",
+            "is_char_boundary (usize) -> bool",
+          ],
+        },
+        {
+          comment: "Bytes",
+          items: [
+            "bytes () -> Iterator<Item = u8>",
+            "as_bytes () -> &[u8]",
+          ],
+        },
+        {
+          comment: "Splitting to two parts",
+          items: [
+            "split_at (usize) -> (&str, &str)",
+          ],
+        },
+        {
+          comment: "Splitting to iterator",
+          items: [
+            "lines () -> Iterator<Item = &str>",
+            "split_whitespace () -> Iterator<Item = &str>",
+            "split_ascii_whitespace () -> Iterator<Item = &str>",
+            "split  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+            "rsplit (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+            "splitn  (usize, char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+            "rsplitn (usize, char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+            "split_terminator  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+            "rsplit_terminator (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+          ],
+        },
+        {
+          comment: "Trimming",
+          items: [
+            "trim       () -> &str",
+            "trim_start () -> &str",
+            "trim_end   () -> &str",
+            "trim_matches       (char | &str | &[char] | (char) -> bool) -> &str",
+            "trim_start_matches (char | &str | &[char] | (char) -> bool) -> &str",
+            "trim_end_matches   (char | &str | &[char] | (char) -> bool) -> &str",
+          ],
+        },
+        {
+          comment: "Matching and finding",
+          items: [
+            "contains    (char | &str | &[char] | (char) -> bool) -> bool",
+            "starts_with (char | &str | &[char] | (char) -> bool) -> bool",
+            "ends_with   (char | &str | &[char] | (char) -> bool) -> bool",
+            "find  (char | &str | &[char] | (char) -> bool) -> Option<usize>",
+            "rfind (char | &str | &[char] | (char) -> bool) -> Option<usize>",
+            "matches  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+            "rmatches (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>",
+            "match_indices  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = (usize, &str)>",
+            "rmatch_indices (char | &str | &[char] | (char) -> bool) -> Iterator<Item = (usize, &str)>",
+          ],
+        },
+        {
+          comment: "Case",
+          items: [
+            "to_uppercase () -> String",
+            "to_lowercase () -> String",
+            "to_ascii_uppercase () -> String",
+            "to_ascii_lowercase () -> String",
+            "eq_ignore_ascii_case (&str) -> bool",
+          ],
+        },
+        {
+          comment: "Replacing",
+          items: [
+            "replace  (char | &str | &[char] | (char) -> bool, &str) -> String",
+            "replacen (char | &str | &[char] | (char) -> bool, &str, usize) -> String",
+          ],
+        },
+        {
+          comment: "Length",
+          items: [
+            "len () -> usize",
+            "is_empty () -> bool",
+          ],
+        },
+        {
+          comment: "Misc.",
+          items: [
+            "is_ascii () -> bool",
+            "repeat (usize) -> String",
+            "encode_utf16 () -> Iterator<Item = u16>",
+            "parse () -> Result<F, E> where F: FromStr",
+          ],
+        },
+      ],
+    },
+    {
+      type: "&mut str",
+      path: "std/primitive.str.html",
+      groups: [
+        {
+          comment: "Splitting to two parts",
+          items: [
+            "split_at_mut (usize) -> (&mut str, &mut str)",
+          ],
+        },
+        {
+          comment: "Case conversion",
+          items: [
+            "make_ascii_uppercase ()",
+            "make_ascii_lowercase ()",
+          ],
+        },
+      ],
+    },
+    {
+      type: "&mut String",
+      path: "std/string/struct.String.html",
+      groups: [
+        {
+          comment: "Inserting and appending string",
+          items: [
+            "push_str (&str)",
+            "insert_str (usize, &str)",
+          ],
+        },
+        {
+          comment: "Adding and removing char",
+          items: [
+            "push (char)",
+            "pop () -> Option<char>",
+            "insert (usize, char)",
+            "remove (usize) -> char",
+          ],
+        },
+        {
+          comment: "Clearing",
+          items: [
+            "clear ()",
+            "truncate (usize)",
+            "retain ((char) -> bool)",
+          ],
+        },
+        {
+          comment: "Capacity manipulation",
+          items: [
+            "reserve (usize)",
+            "reserve_exact (usize)",
+            "shrink_to_fit ()",
+          ],
+        },
+        {
+          comment: "Misc.",
+          items: [
+            "split_off (usize) -> String",
+            "replace_range (RangeBounds<usize>, &str)",
+            "drain (RangeBounds<usize>) -> Iterator<Item = char>",
+          ],
+        },
+      ],
+    },
+  ],
 ];
 
 const BASE_URL = "https://doc.rust-lang.org/";
@@ -548,6 +714,7 @@ for (const [kind, names] of [
     ["ExactSizeIterator", "std/iter"],
     ["Extend", "std/iter"],
     ["FromIterator", "std/iter"],
+    ["FromStr", "std/str"],
     ["IntoIterator", "std/iter"],
     ["Iterator", "std/iter"],
     ["Ord", "std/cmp"],
@@ -555,6 +722,7 @@ for (const [kind, names] of [
     ["PartialOrd", "std/cmp"],
     ["Product", "std/iter"],
     ["RangeBounds", "std/ops"],
+    ["String", "std/string"],
     ["Sum", "std/iter"],
   ]],
   ["enum", [
@@ -565,8 +733,11 @@ for (const [kind, names] of [
   ["primitive", [
     "&",
     ["bool", "std"],
+    ["char", "std"],
     "mut",
     ["str", "std"],
+    ["u8", "std"],
+    ["u16", "std"],
     ["usize", "std"],
   ]],
   ["struct", [
