@@ -1,7 +1,7 @@
 @import url(https://cdn.jsdelivr.net/gh/tonsky/FiraCode@1.206/distr/fira_code.css);
 
 body {
-  font: 16px 'Fira Code', monospace;
+  font: 16px/1.5 'Fira Code', monospace;
 }
 main {
   position: absolute;
@@ -18,6 +18,7 @@ section > h2:first-child {
 }
 h2 {
   font-size: 2em;
+  line-height: normal;
 }
 h3 {
   font: inherit;
@@ -29,7 +30,6 @@ h3::before {
 }
 ul {
   list-style-type: "=> ";
-  line-height: 1.5;
   margin: 0;
 }
 li {
