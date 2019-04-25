@@ -50,7 +50,7 @@ li a {
   font-weight: 500;
 }
 .nested { opacity: 0.6; }
-.method { color: #9a6e31; }
+.method, .fn { color: #9a6e31; }
 .trait { color: #7c5af3; }
 .enum { color: #508157; }
 .primitive { color: #2c8093; }

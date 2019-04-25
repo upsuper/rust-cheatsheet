@@ -135,6 +135,23 @@ const data = [
         },
       ],
     },
+    {
+      mod: "std::iter",
+      path: "std/iter/",
+      groups: [
+        {
+          comment: "Creating simple iterators",
+          items: [
+            "empty () -> Iterator<Item = T>",
+            "once (T) -> Iterator<Item = T>",
+            "repeat (T) -> Iterator<Item = T> where T: Clone",
+            "repeat_with (() -> T) -> Iterator<Item = T>",
+            "from_fn (() -> Option<T>) -> Iterator<Item = T>",
+            "successors (Option<T>, (&T) -> Option<T>) -> Iterator<Item = T>",
+          ],
+        },
+      ],
+    },
   ],
   [
     {
@@ -500,9 +517,9 @@ function build() {
   const main = $c('main');
   for (const superGroup of data) {
     const section = $c('section');
-    for (const { type, path, groups } of superGroup) {
+    for (const { mod, type, path, groups } of superGroup) {
       const h2 = $c('h2');
-      const a = $c('a', type);
+      const a = $c('a', type || mod);
       a.href = `${BASE_URL}${path}`;
       h2.appendChild(a);
       section.appendChild(h2);
@@ -510,7 +527,7 @@ function build() {
         section.appendChild($c('h3', comment));
         const ul = $c('ul');
         for (const item of items) {
-          ul.appendChild(generateItem(item, path));
+          ul.appendChild(generateItem(item, path, type ? 'method' : 'fn'));
         }
         section.appendChild(ul);
       }
@@ -520,12 +537,16 @@ function build() {
   document.body.appendChild(main);
 }
 
-function generateItem(item, base) {
+function generateItem(item, base, kind) {
   const li = $c('li');
   const pieces = item.split(/([^\w&()]+|[&()])/);
-  const method = pieces.shift();
-  const a = $c('a', method, 'method');
-  a.href = `${BASE_URL}${base}#method.${method}`;
+  const fn = pieces.shift();
+  const a = $c('a', fn, kind);
+  if (kind === 'method') {
+    a.href = `${BASE_URL}${base}#method.${fn}`;
+  } else if (kind === 'fn') {
+    a.href = `${BASE_URL}${base}fn.${fn}.html`;
+  }
   li.appendChild(a);
   const levels = [li];
   for (const piece of pieces) {
