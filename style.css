@@ -31,13 +31,14 @@ h3::before {
 ul {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 2em;
 }
 li {
   white-space: pre;
 }
 li::before {
   content: "=> ";
+  margin-left: -2em;
 }
 a {
   text-decoration: none;
