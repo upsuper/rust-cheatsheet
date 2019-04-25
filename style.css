@@ -58,3 +58,16 @@ li a {
 .struct { color: #ad448e; }
 .type { color: #ba5d00; }
 .where { color: #4e4c4c; }
+footer {
+  font-size: 0.8em;
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  z-index: 1;
+  background: white;
+  color: #999;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 0 5px;
+  opacity: .8;
+}
