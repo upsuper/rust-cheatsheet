@@ -198,8 +198,7 @@ const data = [
           items: [
             "first () -> Option<&T>",
             "last  () -> Option<&T>",
-            "get (usize) -> Option<&T>",
-            "get (RangeBounds<usize>) -> Option<&[T]>",
+            "get (usize | RangeBounds<usize>) -> Option<&T>",
             "iter () -> Iterator<Item = &T>",
           ],
         },
@@ -268,8 +267,7 @@ const data = [
           items: [
             "first_mut () -> Option<&mut T>",
             "last_mut  () -> Option<&mut T>",
-            "get_mut (usize) -> Option<&mut T>",
-            "get_mut (RangeBounds<usize>) -> Option<&mut [T]>",
+            "get_mut (usize | RangeBounds<usize>) -> Option<&mut T>",
             "iter_mut () -> Iterator<Item = &mut T>",
           ],
         },
