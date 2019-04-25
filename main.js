@@ -443,8 +443,6 @@ const data = [
         },
       ],
     },
-  ],
-  [
     {
       type: "Result<T, E>",
       path: "std/result/enum.Result.html",
