@@ -1,6 +1,196 @@
 const data = [
   [
     {
+      type: "Option<T>",
+      path: "std/option/enum.Option.html",
+      groups: [
+        {
+          comment: "To inner type",
+          items: [
+            "unwrap () -> T",
+            "unwrap_or (T) -> T",
+            "unwrap_or_else (() -> T) -> T",
+            "unwrap_or_default () -> T where T: Default",
+            "expect (&str) -> T",
+          ],
+        },
+        {
+          comment: "Converting to another type",
+          items: [
+            "map ((T) -> U) -> Option<U>",
+            "map_or (U, (T) -> U) -> U",
+            "map_or_else (() -> U, (T) -> U) -> U",
+          ],
+        },
+        {
+          comment: "To Result",
+          items: [
+            "ok_or (E) -> Result<T, E>",
+            "ok_or_else (() -> E) -> Result<T, E>",
+          ],
+        },
+        {
+          comment: "Conditioning",
+          items: [
+            "filter ((&T) -> bool) -> Option<T>",
+            "and (Option<U>) -> Option<U>",
+            "and_then ((T) -> Option<U>) -> Option<U>",
+            "or (Option<T>) -> Option<T>",
+            "or_else (() -> Option<T>) -> Option<T>",
+          ],
+        },
+      ],
+    },
+    {
+      type: "Option<&T>",
+      path: "std/option/enum.Option.html",
+      groups: [
+        {
+          comment: "Cloning inner",
+          items: [
+            "cloned () -> Option<T> where T: Clone",
+          ],
+        },
+      ],
+    },
+    {
+      type: "Option<Result<T, E>>",
+      path: "std/option/enum.Option.html",
+      groups: [
+        {
+          comment: "Transposing",
+          items: [
+            "transpose () -> Result<Option<T>, E>",
+          ],
+        }
+      ],
+    },
+    {
+      type: "&Option<T>",
+      path: "std/option/enum.Option.html",
+      groups: [
+        {
+          comment: "Checking inner",
+          items: [
+            "is_some () -> bool",
+            "is_none () -> bool",
+          ],
+        },
+        {
+          comment: "To inner reference",
+          items: [
+            "as_ref () -> Option<&T>",
+            "iter () -> Iterator<&T>",
+          ],
+        },
+      ],
+    },
+    {
+      type: "&mut Option<T>",
+      path: "std/option/enum.Option.html",
+      groups: [
+        {
+          comment: "To inner mutable reference",
+          items: [
+            "as_mut () -> Option<&mut T>",
+            "iter_mut () -> Iterator<&mut T>",
+          ],
+        },
+        {
+          comment: "Mutation",
+          items: [
+            "take () -> Option<T>",
+            "replace (T) -> Option<T>",
+            "get_or_insert (T) -> &mut T",
+            "get_or_insert_with (() -> T) -> &mut T",
+          ],
+        },
+      ],
+    },
+    {
+      type: "Result<T, E>",
+      path: "std/result/enum.Result.html",
+      groups: [
+        {
+          comment: "To inner type",
+          items: [
+            "unwrap () -> T where E: Debug",
+            "unwrap_err () -> E where T: Debug",
+            "unwrap_or (T) -> T",
+            "unwrap_or_else ((E) -> T) -> T",
+            "unwrap_or_default () -> T where T: Default",
+            "expect (&str) -> T",
+            "expect_err (&str) -> E",
+            "ok () -> Option<T>",
+            "err () -> Option<E>",
+          ],
+        },
+        {
+          comment: "Mapping",
+          items: [
+            "map ((T) -> U) -> Result<U, E>",
+            "map_err ((E) -> F) -> Result<T, F>",
+          ],
+        },
+        {
+          comment: "Conditioning",
+          items: [
+            "and (Result<U, E>) -> Result<U, E>",
+            "and_then ((T) -> Result<U, E>) -> Result<U, E>",
+            "or (Result<T, F>) -> Result<T, F>",
+            "or_else ((E) -> Result<T, F>) -> Result<T, F>",
+          ],
+        },
+      ],
+    },
+    {
+      type: "Result<Option<T>, E>",
+      path: "std/result/enum.Result.html",
+      groups: [
+        {
+          comment: "Transposing",
+          items: [
+            "transpose () -> Option<Result<T, E>>",
+          ],
+        }
+      ],
+    },
+    {
+      type: "&Result<T, E>",
+      path: "std/result/enum.Result.html",
+      groups: [
+        {
+          comment: "Checking inner",
+          items: [
+            "is_ok () -> bool",
+            "is_err () -> bool",
+          ],
+        },
+        {
+          comment: "To inner reference",
+          items: [
+            "as_ref () -> Result<&T, &E>",
+            "iter () -> Iterator<Item = &T>",
+          ],
+        },
+      ],
+    },
+    {
+      type: "&mut Result<T, E>",
+      path: "std/result/enum.Result.html",
+      groups: [
+        {
+          comment: "To inner mutable reference",
+          items: [
+            "as_mut () -> Result<&mut T, &mut E>",
+            "iter_mut () -> Iterator<Item = &mut T>",
+          ],
+        },
+      ],
+    },
+  ],
+  [
+    {
       type: "Iterator<Item = T>",
       path: "std/iter/trait.Iterator.html",
       groups: [
@@ -354,196 +544,6 @@ const data = [
             "reserve (usize)",
             "reserve_exact (usize)",
             "shrink_to_fit ()",
-          ],
-        },
-      ],
-    },
-  ],
-  [
-    {
-      type: "Option<T>",
-      path: "std/option/enum.Option.html",
-      groups: [
-        {
-          comment: "To inner type",
-          items: [
-            "unwrap () -> T",
-            "unwrap_or (T) -> T",
-            "unwrap_or_else (() -> T) -> T",
-            "unwrap_or_default () -> T where T: Default",
-            "expect (&str) -> T",
-          ],
-        },
-        {
-          comment: "Converting to another type",
-          items: [
-            "map ((T) -> U) -> Option<U>",
-            "map_or (U, (T) -> U) -> U",
-            "map_or_else (() -> U, (T) -> U) -> U",
-          ],
-        },
-        {
-          comment: "To Result",
-          items: [
-            "ok_or (E) -> Result<T, E>",
-            "ok_or_else (() -> E) -> Result<T, E>",
-          ],
-        },
-        {
-          comment: "Conditioning",
-          items: [
-            "filter ((&T) -> bool) -> Option<T>",
-            "and (Option<U>) -> Option<U>",
-            "and_then ((T) -> Option<U>) -> Option<U>",
-            "or (Option<T>) -> Option<T>",
-            "or_else (() -> Option<T>) -> Option<T>",
-          ],
-        },
-      ],
-    },
-    {
-      type: "Option<&T>",
-      path: "std/option/enum.Option.html",
-      groups: [
-        {
-          comment: "Cloning inner",
-          items: [
-            "cloned () -> Option<T> where T: Clone",
-          ],
-        },
-      ],
-    },
-    {
-      type: "Option<Result<T, E>>",
-      path: "std/option/enum.Option.html",
-      groups: [
-        {
-          comment: "Transposing",
-          items: [
-            "transpose () -> Result<Option<T>, E>",
-          ],
-        }
-      ],
-    },
-    {
-      type: "&Option<T>",
-      path: "std/option/enum.Option.html",
-      groups: [
-        {
-          comment: "Checking inner",
-          items: [
-            "is_some () -> bool",
-            "is_none () -> bool",
-          ],
-        },
-        {
-          comment: "To inner reference",
-          items: [
-            "as_ref () -> Option<&T>",
-            "iter () -> Iterator<&T>",
-          ],
-        },
-      ],
-    },
-    {
-      type: "&mut Option<T>",
-      path: "std/option/enum.Option.html",
-      groups: [
-        {
-          comment: "To inner mutable reference",
-          items: [
-            "as_mut () -> Option<&mut T>",
-            "iter_mut () -> Iterator<&mut T>",
-          ],
-        },
-        {
-          comment: "Mutation",
-          items: [
-            "take () -> Option<T>",
-            "replace (T) -> Option<T>",
-            "get_or_insert (T) -> &mut T",
-            "get_or_insert_with (() -> T) -> &mut T",
-          ],
-        },
-      ],
-    },
-    {
-      type: "Result<T, E>",
-      path: "std/result/enum.Result.html",
-      groups: [
-        {
-          comment: "To inner type",
-          items: [
-            "unwrap () -> T where E: Debug",
-            "unwrap_err () -> E where T: Debug",
-            "unwrap_or (T) -> T",
-            "unwrap_or_else ((E) -> T) -> T",
-            "unwrap_or_default () -> T where T: Default",
-            "expect (&str) -> T",
-            "expect_err (&str) -> E",
-            "ok () -> Option<T>",
-            "err () -> Option<E>",
-          ],
-        },
-        {
-          comment: "Mapping",
-          items: [
-            "map ((T) -> U) -> Result<U, E>",
-            "map_err ((E) -> F) -> Result<T, F>",
-          ],
-        },
-        {
-          comment: "Conditioning",
-          items: [
-            "and (Result<U, E>) -> Result<U, E>",
-            "and_then ((T) -> Result<U, E>) -> Result<U, E>",
-            "or (Result<T, F>) -> Result<T, F>",
-            "or_else ((E) -> Result<T, F>) -> Result<T, F>",
-          ],
-        },
-      ],
-    },
-    {
-      type: "Result<Option<T>, E>",
-      path: "std/result/enum.Result.html",
-      groups: [
-        {
-          comment: "Transposing",
-          items: [
-            "transpose () -> Option<Result<T, E>>",
-          ],
-        }
-      ],
-    },
-    {
-      type: "&Result<T, E>",
-      path: "std/result/enum.Result.html",
-      groups: [
-        {
-          comment: "Checking inner",
-          items: [
-            "is_ok () -> bool",
-            "is_err () -> bool",
-          ],
-        },
-        {
-          comment: "To inner reference",
-          items: [
-            "as_ref () -> Result<&T, &E>",
-            "iter () -> Iterator<Item = &T>",
-          ],
-        },
-      ],
-    },
-    {
-      type: "&mut Result<T, E>",
-      path: "std/result/enum.Result.html",
-      groups: [
-        {
-          comment: "To inner mutable reference",
-          items: [
-            "as_mut () -> Result<&mut T, &mut E>",
-            "iter_mut () -> Iterator<Item = &mut T>",
           ],
         },
       ],
