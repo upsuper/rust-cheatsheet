@@ -293,6 +293,8 @@ const data = [
           comment: "Extending",
           items: [
             "append (&mut Vec<T>)",
+            "Extend<T>::extend (IntoIterator<Item = T>)",
+            "Extend<&'a T>::extend (IntoIterator<Item = &T>) where T: Copy",
             "extend_from_slice (&[T]) where T: Clone",
           ],
         },
@@ -533,6 +535,7 @@ const words = new Map();
 for (const [kind, names] of [
   ["trait", [
     ["Clone", "std/clone"],
+    ["Copy", "std/marker"],
     ["Debug", "std/fmt"],
     ["Default", "std/default"],
     ["DoubleEndedIterator", "std/iter"],
@@ -604,15 +607,29 @@ function build() {
 
 function generateItem(item, base, kind) {
   const li = $c('li');
-  const pieces = item.split(/([^\w&()]+|[&()])/);
-  const fn = pieces.shift();
-  const a = $c('a', fn, kind);
+  // Handle trait
+  const colonsPos = item.indexOf('::');
+  const hasTrait = colonsPos > 0;
+  const trait = hasTrait ? item.slice(0, colonsPos) : null;
+  item = hasTrait ? item.slice(colonsPos + 2) : item;
+  // Handle method name
+  const firstSpace = item.indexOf(' ');
+  const funcName = item.slice(0, firstSpace);
+  const a = $c('a', funcName, kind);
   if (kind === 'method') {
-    a.href = `${BASE_URL}${base}#method.${fn}`;
+    let hash;
+    if (trait) {
+      hash = `impl-${escape(trait)}`;
+    } else {
+      hash = `method.${funcName}`;
+    }
+    a.href = `${BASE_URL}${base}#${hash}`;
   } else if (kind === 'fn') {
-    a.href = `${BASE_URL}${base}fn.${fn}.html`;
+    a.href = `${BASE_URL}${base}fn.${funcName}.html`;
   }
   li.appendChild(a);
+  // Format the rest
+  const pieces = item.slice(firstSpace).split(/([^\w&()]+|[&()])/);
   const levels = [li];
   for (const piece of pieces) {
     if (piece === ')') {
