@@ -203,6 +203,13 @@ const data = [
             "iter () -> Iterator<Item = &T>",
           ],
         },
+        {
+          comment: "Length",
+          items: [
+            "len () -> usize",
+            "is_empty () -> bool",
+          ],
+        },
       ],
     },
     {
