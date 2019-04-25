@@ -332,6 +332,14 @@ const data = [
             "split_off (usize) -> Vec<T>",
           ],
         },
+        {
+          comment: "Capacity manipulation",
+          items: [
+            "reserve (usize)",
+            "reserve_exact (usize)",
+            "shrink_to_fit ()",
+          ],
+        },
       ],
     },
   ],
