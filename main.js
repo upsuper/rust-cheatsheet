@@ -282,7 +282,7 @@ const data = [
           ],
         },
         {
-          comment: "Reverting and cycling",
+          comment: "Reversing and cycling",
           items: [
             "rev   () -> Iterator<Item = T> where Self: DoubleEndedIterator",
             "cycle () -> Iterator<Item = T> where Self: Clone",
