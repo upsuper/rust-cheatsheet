@@ -451,29 +451,48 @@ const BASE_URL = "https://doc.rust-lang.org/";
 const words = new Map();
 for (const [kind, names] of [
   ["trait", [
-    "Clone",
-    "Debug",
-    "Default",
-    "DoubleEndedIterator",
-    "ExactSizeIterator",
-    "Extend",
-    "FromIterator",
-    "IntoIterator",
-    "Iterator",
-    "Ord",
-    "PartialEq",
-    "PartialOrd",
-    "Product",
-    "Sum",
+    ["Clone", "std/clone"],
+    ["Debug", "std/fmt"],
+    ["Default", "std/default"],
+    ["DoubleEndedIterator", "std/iter"],
+    ["ExactSizeIterator", "std/iter"],
+    ["Extend", "std/iter"],
+    ["FromIterator", "std/iter"],
+    ["IntoIterator", "std/iter"],
+    ["Iterator", "std/iter"],
+    ["Ord", "std/cmp"],
+    ["PartialEq", "std/cmp"],
+    ["PartialOrd", "std/cmp"],
+    ["Product", "std/iter"],
+    ["Sum", "std/iter"],
   ]],
-  ["enum", ["Option", "Ordering", "Result"]],
-  ["primitive", ["&", "bool", "mut", "str", "usize"]],
-  ["struct", ["Range"]],
+  ["enum", [
+    ["Option", "std/option"],
+    ["Ordering", "std/cmp"],
+    ["Result", "std/result"],
+  ]],
+  ["primitive", [
+    "&",
+    ["bool", "std"],
+    "mut",
+    ["str", "std"],
+    ["usize", "std"],
+  ]],
+  ["struct", [
+    ["Range", "std/ops"],
+  ]],
   ["type", ["Item"]],
   ["where", ["where"]],
 ]) {
   for (const name of names) {
-    words.set(name, kind);
+    let word, path;
+    if (typeof name === 'string') {
+      word = name;
+    } else {
+      [word, path] = name;
+      path += `/${kind}.${word}.html`;
+    }
+    words.set(word, { kind, path });
   }
 }
 
@@ -514,9 +533,14 @@ function generateItem(item, base) {
       const nested = levels.shift();
       levels[0].appendChild(nested);
     }
-    const kind = words.get(piece);
-    if (kind) {
-      levels[0].appendChild($c('span', piece, kind));
+    const info = words.get(piece);
+    if (info) {
+      const { kind, path } = info;
+      const element = $c(path ? 'a' : 'span', piece, kind);
+      if (path) {
+        element.href = BASE_URL + path;
+      }
+      levels[0].appendChild(element);
     } else {
       levels[0].appendChild(document.createTextNode(piece));
     }
