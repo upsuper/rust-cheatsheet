@@ -186,6 +186,14 @@ const data = [
           ],
         },
         {
+          comment: "Matching",
+          items: [
+            "contains    (&T)   -> bool where T: PartialEq",
+            "starts_with (&[T]) -> bool where T: PartialEq",
+            "ends_with   (&[T]) -> bool where T: PartialEq",
+          ],
+        },
+        {
           comment: "Binary searching",
           items: [
             "binary_search (&T)                   -> Result<usize, usize> where T: Ord",
@@ -260,6 +268,14 @@ const data = [
             "reverse ()",
             "rotate_left (usize)",
             "rotate_right (usize)",
+          ],
+        },
+        {
+          comment: "Overriding",
+          items: [
+            "swap_with_slice  (&mut [T])",
+            "copy_from_slice  (&[T]) where T: Copy",
+            "clone_from_slice (&[T]) where T: Clone",
           ],
         },
         {
@@ -534,6 +550,34 @@ const data = [
     },
   ],
   [
+    {
+      type: "&[u8]",
+      path: "std/primitive.slice.html",
+      groups: [
+        {
+          comment: "ASCII",
+          items: [
+            "is_ascii () -> bool",
+            "eq_ignore_ascii_case (&[u8]) -> bool",
+            "to_ascii_uppercase () -> Vec<u8>",
+            "to_ascii_lowercase () -> Vec<u8>",
+          ],
+        },
+      ],
+    },
+    {
+      type: "&mut [u8]",
+      path: "std/primitive.slice.html",
+      groups: [
+        {
+          comment: "ASCII",
+          items: [
+            "make_ascii_uppercase ()",
+            "make_ascii_lowercase ()",
+          ],
+        }
+      ],
+    },
     {
       type: "&str",
       path: "std/primitive.str.html",
