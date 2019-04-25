@@ -87,8 +87,8 @@ const data = [
             "le (IntoIterator<Item = T>) -> bool where T: PartialOrd",
             "gt (IntoIterator<Item = T>) -> bool where T: PartialOrd",
             "ge (IntoIterator<Item = T>) -> bool where T: PartialOrd",
-            "cmp         (IntoIterator<Item = T>) ->        Ordering  where T: Ord",
-            "partial_cmp (IntoIterator<Item = T>) -> Option<Ordering> where T: PartialOrd",
+            "cmp (IntoIterator<Item = T>) -> Ordering where T: Ord",
+            "partial_cmp (IntoIterator<Item = T>)\n-> Option<Ordering> where T: PartialOrd",
           ],
         },
         {
