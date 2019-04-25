@@ -63,7 +63,6 @@ footer {
   position: fixed;
   bottom: 12px;
   right: 16px;
-  z-index: 1;
   background: white;
   color: #999;
   border: 1px solid #ccc;

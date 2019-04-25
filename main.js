@@ -812,7 +812,7 @@ for (const [kind, names] of [
 }
 
 function build() {
-  const main = $c('main');
+  const main = document.querySelector('main');
   for (const superGroup of data) {
     const section = $c('section');
     for (const { mod, type, path, groups } of superGroup) {
@@ -832,7 +832,6 @@ function build() {
     }
     main.appendChild(section);
   }
-  document.body.appendChild(main);
 }
 
 function generateItem(item, base, kind) {
