@@ -323,6 +323,15 @@ const data = [
             "any ((T) -> bool) -> bool",
           ],
         },
+        {
+          comment: "Try iterating",
+          items: [
+            "try_for_each ((T) -> Option<()>)    -> Option<()>",
+            "try_for_each ((T) -> Result<(), E>) -> Result<(), E>",
+            "try_fold (S, (S, T) -> Option<S>)    -> Option<S>",
+            "try_fold (S, (S, T) -> Result<S, E>) -> Result<S, E>",
+          ],
+        },
       ],
     },
     {
