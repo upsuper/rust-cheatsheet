@@ -10,6 +10,12 @@ main {
   transform-origin: 0 0;
   transform: scale(0.5);
 }
+.single main {
+  display: unset;
+}
+.large main {
+  transform: unset;
+}
 section {
   padding: 2em;
 }

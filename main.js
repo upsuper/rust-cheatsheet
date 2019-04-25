@@ -832,6 +832,20 @@ function build() {
     }
     main.appendChild(section);
   }
+  const root = document.documentElement;
+  for (const arg of location.search.slice(1).split(',')) {
+    if (!arg) {
+      continue;
+    }
+    switch (arg) {
+      case 'large':
+      case 'single':
+        root.classList.add(arg);
+        break;
+      default:
+        console.warn(`Unknown argument ${arg}`);
+    }
+  }
 }
 
 function generateItem(item, base, kind) {
