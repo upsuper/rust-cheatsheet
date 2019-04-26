@@ -56,6 +56,12 @@ a:hover {
 li a {
   font-weight: 500;
 }
+.prefix-fn {
+  margin-left: -1.8em;
+  opacity: 0;
+  -moz-user-select: none;
+  user-select: none;
+}
 .nested { opacity: 0.6; }
 .method, .fn { color: #9a6e31; }
 .trait { color: #7c5af3; }

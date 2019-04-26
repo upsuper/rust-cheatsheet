@@ -850,6 +850,7 @@ function build() {
 
 function generateItem(item, base, kind) {
   const li = $c('li');
+  li.appendChild($c('span', 'fn ', 'prefix-fn'));
   // Handle trait
   const colonsPos = item.indexOf('::');
   const hasTrait = colonsPos > 0;
