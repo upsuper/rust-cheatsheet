@@ -16,35 +16,6 @@ main {
 .large main {
   transform: unset;
 }
-section {
-  padding: 2em;
-}
-section > h2:first-child {
-  margin-top: 0;
-}
-h2 {
-  font-size: 2em;
-  line-height: normal;
-}
-h3 {
-  font: inherit;
-  margin: 1em 0 0;
-}
-h3::before {
-  content: "// ";
-}
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 2em;
-}
-li {
-  white-space: pre;
-}
-li::before {
-  content: "=> ";
-  margin-left: -2em;
-}
 a {
   text-decoration: none;
   color: inherit;
@@ -52,7 +23,41 @@ a {
 a:hover {
   text-decoration: underline;
 }
-li a {
+ul {
+  list-style: none;
+}
+ul, li {
+  padding: 0;
+  margin: 0;
+}
+section {
+  padding: 2em;
+}
+section > h2:first-child {
+  margin-top: 0;
+}
+main h2 {
+  font-size: 2em;
+  line-height: normal;
+}
+main h3 {
+  font: inherit;
+  margin: 1em 0 0;
+}
+main h3::before {
+  content: "// ";
+}
+main ul {
+  padding-left: 2em;
+}
+main li {
+  white-space: pre;
+}
+main li::before {
+  content: "=> ";
+  margin-left: -2em;
+}
+main li a {
   font-weight: 500;
 }
 .prefix-fn {
@@ -63,12 +68,29 @@ li a {
 }
 .nested { opacity: 0.6; }
 footer {
-  font-size: 0.8em;
+  font-size: 0.6em;
   position: fixed;
-  bottom: 12px;
+  bottom: 16px;
   right: 16px;
   border: 1px solid;
   border-radius: 5px;
-  padding: 0 5px;
   opacity: .8;
+}
+footer ul {
+  display: flex;
+}
+footer li:first-child {
+  margin-left: 1px;
+}
+footer li a {
+  display: block;
+  padding: 5px .5em;
+  border-radius: 5px;
+  margin-right: 1px;
+}
+footer li:last-child {
+  border-left: 1px solid;
+}
+footer a:hover {
+  text-decoration: none;
 }

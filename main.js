@@ -811,7 +811,45 @@ for (const [kind, names] of [
   }
 }
 
-function build() {
+const promiseDomLoaded = new Promise(resolve => {
+  window.addEventListener("DOMContentLoaded", resolve, { once: true });
+});
+
+loadArgs();
+loadContent();
+
+async function loadArgs() {
+  const root = document.documentElement;
+  const args = location.search.slice(1).split(',').filter(arg => !!arg);
+  for (const arg of args) {
+    switch (arg) {
+      case 'dark':
+        document.getElementById('theme').href = 'theme-dark.css';
+        break;
+      case 'large':
+      case 'single':
+        root.classList.add(arg);
+        break;
+      default:
+        console.warn(`Unknown argument ${arg}`);
+    }
+  }
+  await promiseDomLoaded;
+  const footer = document.querySelector('footer');
+  const modeSwitches = footer.querySelectorAll('li > a[href^="?"]');
+  for (const a of modeSwitches) {
+    const mode = a.getAttribute('href').slice(1);
+    if (args.includes(mode)) {
+      a.parentNode.classList.add('on');
+      a.href = '?' + args.filter(arg => arg !== mode).join(',');
+    } else {
+      a.href = '?' + [...args, mode].join(',');
+    }
+  }
+}
+
+async function loadContent() {
+  await promiseDomLoaded;
   const main = document.querySelector('main');
   for (const superGroup of data) {
     const section = $c('section');
@@ -896,26 +934,3 @@ function $c(tag, text, className) {
   }
   return element;
 }
-
-function loadArgs() {
-  const root = document.documentElement;
-  for (const arg of location.search.slice(1).split(',')) {
-    if (!arg) {
-      continue;
-    }
-    switch (arg) {
-      case 'dark':
-        document.getElementById('theme').href = 'theme-dark.css';
-        break;
-      case 'large':
-      case 'single':
-        root.classList.add(arg);
-        break;
-      default:
-        console.warn(`Unknown argument ${arg}`);
-    }
-  }
-}
-
-loadArgs();
-window.addEventListener("DOMContentLoaded", build);

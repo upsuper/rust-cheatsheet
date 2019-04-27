@@ -15,5 +15,11 @@ h3 {
 footer {
   background: #353535;
   color: #ccc;
+}
+footer, footer li:last-child {
   border-color: #999;
+}
+footer li.on a {
+  color: #333;
+  background: #ccc;
 }
