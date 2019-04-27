@@ -1,0 +1,19 @@
+body {
+  color: #ddd;
+  background: #353535;
+}
+h3 {
+  color: #8d8d8b;
+}
+.method, .fn { color: #2bab63; }
+.trait { color: #b78cf2; }
+.enum { color: #82b089; }
+.primitive { color: #43aec7; }
+.struct { color: #2dbfb8; }
+.type { color: #ff7f00; }
+.where { color: #ddd; }
+footer {
+  background: #353535;
+  color: #ccc;
+  border-color: #999;
+}

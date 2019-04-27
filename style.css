@@ -28,7 +28,6 @@ h2 {
 }
 h3 {
   font: inherit;
-  color: #8E908C;
   margin: 1em 0 0;
 }
 h3::before {
@@ -63,21 +62,12 @@ li a {
   user-select: none;
 }
 .nested { opacity: 0.6; }
-.method, .fn { color: #9a6e31; }
-.trait { color: #7c5af3; }
-.enum { color: #508157; }
-.primitive { color: #2c8093; }
-.struct { color: #ad448e; }
-.type { color: #ba5d00; }
-.where { color: #4e4c4c; }
 footer {
   font-size: 0.8em;
   position: fixed;
   bottom: 12px;
   right: 16px;
-  background: white;
-  color: #999;
-  border: 1px solid #ccc;
+  border: 1px solid;
   border-radius: 5px;
   padding: 0 5px;
   opacity: .8;

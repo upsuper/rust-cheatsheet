@@ -832,20 +832,6 @@ function build() {
     }
     main.appendChild(section);
   }
-  const root = document.documentElement;
-  for (const arg of location.search.slice(1).split(',')) {
-    if (!arg) {
-      continue;
-    }
-    switch (arg) {
-      case 'large':
-      case 'single':
-        root.classList.add(arg);
-        break;
-      default:
-        console.warn(`Unknown argument ${arg}`);
-    }
-  }
 }
 
 function generateItem(item, base, kind) {
@@ -911,4 +897,25 @@ function $c(tag, text, className) {
   return element;
 }
 
+function loadArgs() {
+  const root = document.documentElement;
+  for (const arg of location.search.slice(1).split(',')) {
+    if (!arg) {
+      continue;
+    }
+    switch (arg) {
+      case 'dark':
+        document.getElementById('theme').href = 'theme-dark.css';
+        break;
+      case 'large':
+      case 'single':
+        root.classList.add(arg);
+        break;
+      default:
+        console.warn(`Unknown argument ${arg}`);
+    }
+  }
+}
+
+loadArgs();
 window.addEventListener("DOMContentLoaded", build);
