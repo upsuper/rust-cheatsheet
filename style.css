@@ -57,6 +57,9 @@ main li::before {
   content: "=> ";
   margin-left: -2em;
 }
+main li.item-fn::before {
+  content: ":: ";
+}
 main li a {
   font-weight: 500;
 }

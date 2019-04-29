@@ -335,18 +335,18 @@ const data = [
       ],
     },
     {
-      mod: "std::iter",
+      mod: "iter",
       path: "std/iter/",
       groups: [
         {
           comment: "Creating simple iterators",
           items: [
-            "empty () -> Iterator<Item = T>",
-            "once (T) -> Iterator<Item = T>",
-            "repeat (T) -> Iterator<Item = T> where T: Clone",
-            "repeat_with (() -> T) -> Iterator<Item = T>",
-            "from_fn (() -> Option<T>) -> Iterator<Item = T>",
-            "successors (Option<T>, (&T) -> Option<T>) -> Iterator<Item = T>",
+            "::empty () -> Iterator<Item = T>",
+            "::once (T) -> Iterator<Item = T>",
+            "::repeat (T) -> Iterator<Item = T> where T: Clone",
+            "::repeat_with (() -> T) -> Iterator<Item = T>",
+            "::from_fn (() -> Option<T>) -> Iterator<Item = T>",
+            "::successors (Option<T>, (&T) -> Option<T>) -> Iterator<Item = T>",
           ],
         },
       ],
@@ -874,6 +874,10 @@ async function loadContent() {
 
 function generateItem(item, base, kind) {
   const li = $c('li');
+  if (item.startsWith('::')) {
+    li.classList.add('item-fn');
+    item = item.slice(2);
+  }
   li.appendChild($c('span', 'fn ', 'prefix-fn'));
   // Handle trait
   const colonsPos = item.indexOf('::');
