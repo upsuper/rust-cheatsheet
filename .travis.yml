@@ -1,0 +1,15 @@
+language: rust
+cache: cargo
+
+script:
+  - cargo build --verbose
+  - cargo test --verbose
+  - ./build_pages.sh
+
+deploy:
+  - provider: pages
+    skip_cleanup: true
+    github_token: $GITHUB_TOKEN
+    local_dir: out
+    on:
+      branch: master

@@ -1,0 +1,496 @@
+base_url: "https://doc.rust-lang.org/"
+
+main:
+  # Option & Result
+  - - type: "Option<T>"
+      kind: enum
+      path: "std::option::Option"
+      groups:
+        - name: "To inner type"
+          items:
+            - "unwrap () -> T"
+            - "unwrap_or (T) -> T"
+            - "unwrap_or_else (() -> T) -> T"
+            - "unwrap_or_default () -> T where T: Default"
+            - "expect (&str) -> T"
+        - name: "Converting to another type"
+          items:
+            - "map ((T) -> U) -> Option<U>"
+            - "map_or (U, (T) -> U) -> U"
+            - "map_or_else (() -> U, (T) -> U) -> U"
+        - name: "To Result"
+          items:
+            - "ok_or (E) -> Result<T, E>"
+            - "ok_or_else (() -> E) -> Result<T, E>"
+        - name: "Conditioning"
+          items:
+            - "filter ((&T) -> bool) -> Option<T>"
+            - "and (Option<U>) -> Option<U>"
+            - "and_then ((T) -> Option<U>) -> Option<U>"
+            - "or (Option<T>) -> Option<T>"
+            - "or_else (() -> Option<T>) -> Option<T>"
+    - type: "Option<&T>"
+      groups:
+        - name: "Cloning inner"
+          items:
+            - "cloned () -> Option<T> where T: Clone"
+    - type: "Option<Result<T, E>>"
+      groups:
+        - name: "Transposing"
+          items:
+            - "transpose () -> Result<Option<T>, E>"
+    - type: "&Option<T>"
+      groups:
+        - name: "Checking inner"
+          items:
+            - "is_some () -> bool"
+            - "is_none () -> bool"
+        - name: "To inner reference"
+          items:
+            - "as_ref () -> Option<&T>"
+            - "iter () -> Iterator<&T>"
+    - type: "&mut Option<T>"
+      groups:
+        - name: "To inner mutable reference"
+          items:
+            - "as_mut () -> Option<&mut T>"
+            - "iter_mut () -> Iterator<&mut T>"
+        - name: "Mutation"
+          items:
+            - "take () -> Option<T>"
+            - "replace (T) -> Option<T>"
+            - "get_or_insert (T) -> &mut T"
+            - "get_or_insert_with (() -> T) -> &mut T"
+    - type: "Result<T, E>"
+      kind: enum
+      path: "std::result::Result"
+      groups:
+        - name: "To inner type"
+          items:
+            - "unwrap () -> T where E: Debug"
+            - "unwrap_err () -> E where T: Debug"
+            - "unwrap_or (T) -> T"
+            - "unwrap_or_else ((E) -> T) -> T"
+            - "unwrap_or_default () -> T where T: Default"
+            - "expect (&str) -> T"
+            - "expect_err (&str) -> E"
+            - "ok () -> Option<T>"
+            - "err () -> Option<E>"
+        - name: "Mapping"
+          items:
+            - "map ((T) -> U) -> Result<U, E>"
+            - "map_err ((E) -> F) -> Result<T, F>"
+        - name: "Conditioning"
+          items:
+            - "and (Result<U, E>) -> Result<U, E>"
+            - "and_then ((T) -> Result<U, E>) -> Result<U, E>"
+            - "or (Result<T, F>) -> Result<T, F>"
+            - "or_else ((E) -> Result<T, F>) -> Result<T, F>"
+    - type: "Result<Option<T>, E>"
+      groups:
+        - name: "Transposing"
+          items:
+            - "transpose () -> Option<Result<T, E>>"
+    - type: "&Result<T, E>"
+      groups:
+        - name: "Checking inner"
+          items:
+            - "is_ok () -> bool"
+            - "is_err () -> bool"
+        - name: "To inner reference"
+          items:
+            - "as_ref () -> Result<&T, &E>"
+            - "iter () -> Iterator<Item = &T>"
+    - type: "&mut Result<T, E>"
+      groups:
+        - name: "To inner mutable reference"
+          items:
+            - "as_mut () -> Result<&mut T, &mut E>"
+            - "iter_mut () -> Iterator<Item = &mut T>"
+  # Iterator
+  - - type: "Iterator<Item = T>"
+      kind: trait
+      path: "std::iter::Iterator"
+      groups:
+        - name: "Mapping and filtering"
+          items:
+            - "map        (( T) -> U)         -> Iterator<Item = U>"
+            - "filter     ((&T) -> bool)      -> Iterator<Item = T>"
+            - "filter_map (( T) -> Option<U>) -> Iterator<Item = U>"
+        - name: "Collecting and folding"
+          items:
+            - "fold (S, (S, T) -> S) -> S"
+            - "collect () -> B where B: FromIterator<T>"
+            - "partition ((&T) -> bool) -> (B, B) where B: Default + Extend<T>"
+        - name: "Counting and enumerating"
+          items:
+            - "count () -> usize"
+            - "last () -> Option<T>"
+            - "enumerate () -> Iterator<Item = (usize, T)>"
+        - name: "Combining with other iterators"
+          items:
+            - "zip   (IntoIterator<Item = U>) -> Iterator<Item = (T, U)>"
+            - "chain (IntoIterator<Item = T>) -> Iterator<Item = T>"
+        - name: "Flattening"
+          items:
+            - "flatten () -> Iterator<U> where T: IntoIterator<U>"
+            - "flat_map ((T) -> IntoIterator<Item = U>) -> Iterator<Item = U>"
+        - name: "Taking and skipping"
+          items:
+            - "skip (usize) -> Iterator<Item = T>"
+            - "take (usize) -> Iterator<Item = T>"
+            - "skip_while ((&T) -> bool) -> Iterator<Item = T>"
+            - "take_while ((&T) -> bool) -> Iterator<Item = T>"
+            - "step_by (usize) -> Iterator<Item = T>"
+        - name: "Misc. iterating"
+          items:
+            - "for_each ((T) -> ()) -> ()"
+            - "inspect ((&T) -> ()) -> Iterator<Item = T>"
+            - "scan (S, (&mut S, T) -> Option<U>) -> Iterator<Item = U>"
+        - name: "Calculations"
+          items:
+            - "sum     () -> S where S: Sum<T>"
+            - "product () -> P where P: Product<T>"
+        - name: "Maximum and minimum"
+          items:
+            - "max () -> Option<T> where T: Ord"
+            - "min () -> Option<T> where T: Ord"
+            - "max_by ((&T, &T) -> Ordering) -> Option<T>"
+            - "min_by ((&T, &T) -> Ordering) -> Option<T>"
+            - "max_by_key ((&T) -> U) -> Option<T> where U: Ord"
+            - "min_by_key ((&T) -> U) -> Option<T> where U: Ord"
+        - name: "Comparing with another iterator"
+          items:
+            - "eq (IntoIterator<Item = T>) -> bool where T: PartialEq"
+            - "ne (IntoIterator<Item = T>) -> bool where T: PartialEq"
+            - "lt (IntoIterator<Item = T>) -> bool where T: PartialOrd"
+            - "le (IntoIterator<Item = T>) -> bool where T: PartialOrd"
+            - "gt (IntoIterator<Item = T>) -> bool where T: PartialOrd"
+            - "ge (IntoIterator<Item = T>) -> bool where T: PartialOrd"
+            - "cmp (IntoIterator<Item = T>) -> Ordering where T: Ord"
+            - "partial_cmp (IntoIterator<Item = T>)\n-> Option<Ordering> where T: PartialOrd"
+        - name: "Reversing and cycling"
+          items:
+            - "rev   () -> Iterator<Item = T> where Self: DoubleEndedIterator"
+            - "cycle () -> Iterator<Item = T> where Self: Clone"
+    - type: "Iterator<Item = &T>"
+      groups:
+        - name: "Cloning inner"
+          items:
+            - "cloned () -> Iterator<T> where T: Clone"
+    - type: "&mut Iterator<Item = T>"
+      groups:
+        - name: "Finding and positioning"
+          items:
+            - "find      ((&T) -> bool)      -> Option<T>"
+            - "find_map  (( T) -> Option<U>) -> Option<U>"
+            - "position  (( T) -> bool)      -> Option<usize>"
+            - |-
+              rposition (( T) -> bool)      -> Option<usize>
+              where Self: ExactSizeIterator + DoubleEndedIterator
+        - name: "Boolean operations"
+          items:
+            - "all ((T) -> bool) -> bool"
+            - "any ((T) -> bool) -> bool"
+        - name: "Try iterating"
+          items:
+            - "try_for_each ((T) -> Option<()>)    -> Option<()>"
+            - "try_for_each ((T) -> Result<(), E>) -> Result<(), E>"
+            - "try_fold (S, (S, T) -> Option<S>)    -> Option<S>"
+            - "try_fold (S, (S, T) -> Result<S, E>) -> Result<S, E>"
+    - mod: "iter"
+      path: "std::iter"
+      groups:
+        - name: "Creating simple iterators"
+          items:
+            - "empty () -> Iterator<Item = T>"
+            - "once (T) -> Iterator<Item = T>"
+            - "repeat (T) -> Iterator<Item = T> where T: Clone"
+            - "repeat_with (() -> T) -> Iterator<Item = T>"
+            - "from_fn (() -> Option<T>) -> Iterator<Item = T>"
+            - "successors (Option<T>, (&T) -> Option<T>) -> Iterator<Item = T>"
+  # Slice & Vec
+  - - type: "&[T]"
+      kind: primitive
+      path: "std::slice"
+      groups:
+        - name: "Splitting to iterator"
+          items:
+            - "split  ((&T) -> bool) -> Iterator<Item = &[T]>"
+            - "rsplit ((&T) -> bool) -> Iterator<Item = &[T]>"
+            - "splitn  (usize, (&T) -> bool) -> Iterator<Item = &[T]>"
+            - "rsplitn (usize, (&T) -> bool) -> Iterator<Item = &[T]>"
+        - name: "Splitting at position"
+          items:
+            - "split_at (usize) -> (&[T], &[T])"
+            - "split_first () -> Option<(&T, &[T])>"
+            - "split_last  () -> Option<(&T, &[T])>"
+        - name: "Chunks and windows"
+          items:
+            - "chunks        (usize) -> Iterator<Item = &[T]>"
+            - "chunks_exact  (usize) -> Iterator<Item = &[T]>"
+            - "rchunks       (usize) -> Iterator<Item = &[T]>"
+            - "rchunks_exact (usize) -> Iterator<Item = &[T]>"
+            - "windows       (usize) -> Iterator<Item = &[T]>"
+        - name: "Matching"
+          items:
+            - "contains    (&T)   -> bool where T: PartialEq"
+            - "starts_with (&[T]) -> bool where T: PartialEq"
+            - "ends_with   (&[T]) -> bool where T: PartialEq"
+        - name: "Binary searching"
+          items:
+            - "binary_search (&T)                   -> Result<usize, usize> where T: Ord"
+            - "binary_search_by ((&T) -> Ordering)  -> Result<usize, usize>"
+            - "binary_search_by_key (&B, (&T) -> B) -> Result<usize, usize> where B: Ord"
+        - name: "Getting and iterating"
+          items:
+            - "first () -> Option<&T>"
+            - "last  () -> Option<&T>"
+            - "get (usize | RangeBounds<usize>) -> Option<&T>"
+            - "iter () -> Iterator<Item = &T>"
+        - name: "Length"
+          items:
+            - "len () -> usize"
+            - "is_empty () -> bool"
+    - type: "&mut [T]"
+      groups:
+        - name: "Splitting to iterator"
+          items:
+            - "split_mut  ((&T) -> bool) -> Iterator<Item = &mut [T]>"
+            - "rsplit_mut ((&T) -> bool) -> Iterator<Item = &mut [T]>"
+            - "splitn_mut  (usize, (&T) -> bool) -> Iterator<Item = &mut [T]>"
+            - "rsplitn_mut (usize, (&T) -> bool) -> Iterator<Item = &mut [T]>"
+        - name: "Splitting at position"
+          items:
+            - "split_at_mut (usize) -> (&mut [T], &mut [T])"
+            - "split_first_mut () -> Option<(&mut T, &mut [T])>"
+            - "split_last_mut  () -> Option<(&mut T, &mut [T])>"
+        - name: "Chunks"
+          items:
+            - "chunks_mut        (usize) -> Iterator<Item = &mut [T]>"
+            - "chunks_exact_mut  (usize) -> Iterator<Item = &mut [T]>"
+            - "rchunks_mut       (usize) -> Iterator<Item = &mut [T]>"
+            - "rchunks_exact_mut (usize) -> Iterator<Item = &mut [T]>"
+        - name: "Sorting"
+          items:
+            - "sort () where T: Ord"
+            - "sort_by ((&T, &T) -> Ordering)"
+            - "sort_by_key ((&T) -> K) where K: Ord"
+            - "sort_by_cached_key ((&T) -> K) where K: Ord"
+            - "sort_unstable () where T: Ord"
+            - "sort_unstable_by ((&T, &T) -> Ordering)"
+            - "sort_unstable_by_key ((&T) -> K) where K: Ord"
+        - name: "Rearranging"
+          items:
+            - "swap (usize, usize)"
+            - "reverse ()"
+            - "rotate_left (usize)"
+            - "rotate_right (usize)"
+        - name: "Overriding"
+          items:
+            - "swap_with_slice  (&mut [T])"
+            - "copy_from_slice  (&[T]) where T: Copy"
+            - "clone_from_slice (&[T]) where T: Clone"
+        - name: "Getting and iterating"
+          items:
+            - "first_mut () -> Option<&mut T>"
+            - "last_mut  () -> Option<&mut T>"
+            - "get_mut (usize | RangeBounds<usize>) -> Option<&mut T>"
+            - "iter_mut () -> Iterator<Item = &mut T>"
+    - type: "&mut Vec<T>"
+      kind: struct
+      path: "std::vec::Vec"
+      groups:
+        - name: "Adding and removing single item"
+          items:
+            - "push (T)"
+            - "pop () -> Option<T>"
+            - "insert (usize, T)"
+            - "remove (usize) -> T"
+            - "swap_remove (usize) -> T"
+        - name: "Extending"
+          items:
+            - "append (&mut Vec<T>)"
+            - trait_impl: "Extend<T>"
+              content: "extend (IntoIterator<Item = T>)"
+            - trait_impl: "Extend<&'a T>"
+              content: "extend (IntoIterator<Item = &T>) where T: Copy"
+            - "extend_from_slice (&[T]) where T: Clone"
+        - name: "Resizing"
+          items:
+            - "truncate (usize)"
+            - "resize (usize, T) where T: Clone"
+            - "resize_with (usize, () -> T)"
+        - name: "Clearing"
+          items:
+            - "clear ()"
+            - "retain ((&T) -> bool)"
+        - name: "Removing or replacing range into iterator"
+          items:
+            - "drain  (RangeBounds<usize>) -> Iterator<T>"
+            - "splice (RangeBounds<usize>, IntoIterator<Item = T>) -> Iterator<T>"
+        - name: "Deduplicating"
+          items:
+            - "dedup () where T: PartialEq"
+            - "dedup_by ((&mut T, &mut T) -> bool)"
+            - "dedup_by_key ((&mut T) -> K) where K: PartialEq"
+        - name: "Splitting off"
+          items:
+            - "split_off (usize) -> Vec<T>"
+        - name: "Capacity manipulation"
+          items:
+            - "reserve (usize)"
+            - "reserve_exact (usize)"
+            - "shrink_to_fit ()"
+  # String-related
+  - - type: "&[u8]"
+      kind: primitive
+      path: "std::slice"
+      groups:
+        - name: "ASCII"
+          items:
+            - "is_ascii () -> bool"
+            - "eq_ignore_ascii_case (&[u8]) -> bool"
+            - "to_ascii_uppercase () -> Vec<u8>"
+            - "to_ascii_lowercase () -> Vec<u8>"
+    - type: "&mut [u8]"
+      groups:
+        - name: "ASCII"
+          items:
+            - "make_ascii_uppercase ()"
+            - "make_ascii_lowercase ()"
+    - type: "&str"
+      kind: primitive
+      path: "std::str"
+      groups:
+        - name: "Chars"
+          items:
+            - "chars () -> Iterator<Item = char>"
+            - "char_indices () -> Iterator<Item = (usize, char)>"
+            - "is_char_boundary (usize) -> bool"
+        - name: "Bytes"
+          items:
+            - "bytes () -> Iterator<Item = u8>"
+            - "as_bytes () -> &[u8]"
+        - name: "Splitting to two parts"
+          items:
+            - "split_at (usize) -> (&str, &str)"
+        - name: "Splitting to iterator"
+          items:
+            - "lines () -> Iterator<Item = &str>"
+            - "split_whitespace () -> Iterator<Item = &str>"
+            - "split_ascii_whitespace () -> Iterator<Item = &str>"
+            - "split  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "rsplit (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "splitn  (usize, char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "rsplitn (usize, char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "split_terminator  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "rsplit_terminator (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+        - name: "Trimming"
+          items:
+            - "trim       () -> &str"
+            - "trim_start () -> &str"
+            - "trim_end   () -> &str"
+            - "trim_matches       (char | &str | &[char] | (char) -> bool) -> &str"
+            - "trim_start_matches (char | &str | &[char] | (char) -> bool) -> &str"
+            - "trim_end_matches   (char | &str | &[char] | (char) -> bool) -> &str"
+        - name: "Matching and finding"
+          items:
+            - "contains    (char | &str | &[char] | (char) -> bool) -> bool"
+            - "starts_with (char | &str | &[char] | (char) -> bool) -> bool"
+            - "ends_with   (char | &str | &[char] | (char) -> bool) -> bool"
+            - "find  (char | &str | &[char] | (char) -> bool) -> Option<usize>"
+            - "rfind (char | &str | &[char] | (char) -> bool) -> Option<usize>"
+            - "matches  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "rmatches (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "match_indices  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = (usize, &str)>"
+            - "rmatch_indices (char | &str | &[char] | (char) -> bool) -> Iterator<Item = (usize, &str)>"
+        - name: "Case"
+          items:
+            - "to_uppercase () -> String"
+            - "to_lowercase () -> String"
+            - "to_ascii_uppercase () -> String"
+            - "to_ascii_lowercase () -> String"
+            - "eq_ignore_ascii_case (&str) -> bool"
+        - name: "Replacing"
+          items:
+            - "replace  (char | &str | &[char] | (char) -> bool, &str) -> String"
+            - "replacen (char | &str | &[char] | (char) -> bool, &str, usize) -> String"
+        - name: "Length"
+          items:
+            - "len () -> usize"
+            - "is_empty () -> bool"
+        - name: "Misc."
+          items:
+            - "is_ascii () -> bool"
+            - "repeat (usize) -> String"
+            - "encode_utf16 () -> Iterator<Item = u16>"
+            - "parse () -> Result<F, E> where F: FromStr"
+    - type: "&mut str"
+      groups:
+        - name: "Splitting to two parts"
+          items:
+            - "split_at_mut (usize) -> (&mut str, &mut str)"
+        - name: "Case conversion"
+          items:
+            - "make_ascii_uppercase ()"
+            - "make_ascii_lowercase ()"
+    - type: "&mut String"
+      kind: struct
+      path: "std::string::String"
+      groups:
+        - name: "Inserting and appending string"
+          items:
+            - "push_str (&str)"
+            - "insert_str (usize, &str)"
+        - name: "Adding and removing char"
+          items:
+            - "push (char)"
+            - "pop () -> Option<char>"
+            - "insert (usize, char)"
+            - "remove (usize) -> char"
+        - name: "Clearing"
+          items:
+            - "clear ()"
+            - "truncate (usize)"
+            - "retain ((char) -> bool)"
+        - name: "Capacity manipulation"
+          items:
+            - "reserve (usize)"
+            - "reserve_exact (usize)"
+            - "shrink_to_fit ()"
+        - name: "Misc."
+          items:
+            - "split_off (usize) -> String"
+            - "replace_range (RangeBounds<usize>, &str)"
+            - "drain (RangeBounds<usize>) -> Iterator<Item = char>"
+
+references:
+  - kind: trait
+    names:
+      - "std::clone::Clone"
+      - "std::cmp::Ord"
+      - "std::cmp::PartialEq"
+      - "std::cmp::PartialOrd"
+      - "std::default::Default"
+      - "std::fmt::Debug"
+      - "std::iter::DoubleEndedIterator"
+      - "std::iter::ExactSizeIterator"
+      - "std::iter::Extend"
+      - "std::iter::FromIterator"
+      - "std::iter::IntoIterator"
+      - "std::iter::Iterator"
+      - "std::iter::Product"
+      - "std::iter::Sum"
+      - "std::marker::Copy"
+      - "std::ops::RangeBounds"
+      - "std::str::FromStr"
+  - kind: enum
+    names:
+      - "std::option::Option"
+      - "std::cmp::Ordering"
+      - "std::result::Result"
+  - kind: struct
+    names:
+      - "std::ops::Range"
+      - "std::string::String"
