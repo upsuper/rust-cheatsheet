@@ -175,7 +175,11 @@ fn lifetime_param<'a>() -> parser_str_to_iter_token!('a) {
 }
 
 fn assoc_type_param<'a>() -> parser_str_to_iter_token!('a) {
-    chain3(identifier(), lex("="), type_like())
+    chain3(
+        identifier_str().map(Token::AssocType).map(iter::once),
+        lex("="),
+        type_like(),
+    )
 }
 
 fn optional_tokens<'a>(inner: parser_str_to_iter_token!('a)) -> parser_str_to_iter_token!('a) {
@@ -232,10 +236,6 @@ fn lifetime<'a>() -> parser_str_to!('a, &'a str) {
     recognize((char('\''), skip_many1(letter())))
 }
 
-fn identifier<'a>() -> parser_str_to_iter_token!('a) {
-    identifier_str().map(Token::Identifier).map(iter::once)
-}
-
 fn identifier_str<'a>() -> parser_str_to!('a, &'a str) {
     recognize(skip_many1(choice((alpha_num(), char('_')))))
 }
@@ -283,6 +283,10 @@ mod tests {
         ($result:ident) => {};
         ($result:ident where $($t:tt)*) => {
             $result.push(Token::Where);
+            tokens_impl!($result $($t)*);
+        };
+        ($result:ident +$ident:ident $($t:tt)*) => {
+            $result.push(Token::AssocType(stringify!($ident)));
             tokens_impl!($result $($t)*);
         };
         ($result:ident $ident:ident $($t:tt)*) => {
@@ -358,7 +362,7 @@ mod tests {
         assert_eq!(parse("() -> Foo"), tokens!("(" ") -> " Foo));
         assert_eq!(
             parse("(Iterator<Item = T>) -> Result<(), T>"),
-            tokens!("(" { Iterator "<" Item " = " T ">" } ") -> " Result "<" @() ", " T ">"),
+            tokens!("(" { Iterator "<" +Item " = " T ">" } ") -> " Result "<" @() ", " T ">"),
         );
         assert_eq!(
             parse("(Foo, &(Bar, &mut 'a [Baz])) -> T"),

@@ -10,7 +10,7 @@ h3 {
 .enum { color: #508157; }
 .primitive { color: #2c8093; }
 .struct { color: #ad448e; }
-.type { color: #ba5d00; }
+.assoc-type { color: #ba5d00; }
 .where { color: #4e4c4c; }
 footer {
   background: white;

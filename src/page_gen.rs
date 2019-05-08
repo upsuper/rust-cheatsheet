@@ -130,6 +130,9 @@ where
                 Token::Text(text) => write!(self.writer, "{}", escape(text)),
                 Token::Where => write!(self.writer, r#"<span class="where">where</span>"#),
                 Token::Identifier(ident) => self.generate_identifier(ident),
+                Token::AssocType(ty) => {
+                    write!(self.writer, r#"<span class="assoc-type">{}</span>"#, ty)
+                }
                 Token::Primitive(primitive) => self.generate_primitive(primitive),
                 Token::Nested(nested) => {
                     write!(self.writer, r#"<span class="nested">"#)?;
