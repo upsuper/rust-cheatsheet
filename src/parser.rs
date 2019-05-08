@@ -7,7 +7,7 @@ use combine::parser::{
     repeat::{many, skip_many1},
     Parser,
 };
-use either_n::{Either2, Either3, Either6};
+use either_n::{Either2, Either3, Either5};
 use std::iter;
 
 pub fn parse_item(input: &str) -> Result<(&str, TokenStream<'_>), ()> {
@@ -70,28 +70,22 @@ fn to_boxed_iter<'a, T>(iter: impl Iterator<Item = T> + 'a) -> Box<dyn Iterator<
 
 fn single_type_like<'a>() -> parser_iter_token!('a) {
     choice((
-        attempt(ref_mut_type()).map(Either6::One),
-        attempt(ref_type()).map(Either6::Two),
-        attempt(slice_type()).map(Either6::Three),
-        attempt(fn_type()).map(Either6::Four),
-        attempt(tuple_type()).map(Either6::Five),
-        named_type().map(Either6::Six),
+        attempt(ref_type()).map(Either5::One),
+        attempt(slice_type()).map(Either5::Two),
+        attempt(fn_type()).map(Either5::Three),
+        attempt(tuple_type()).map(Either5::Four),
+        named_type().map(Either5::Five),
     ))
-}
-
-fn ref_mut_type<'a>() -> parser_iter_token!('a) {
-    chain3(
-        recognize((string("&mut"), optional(attempt((spaces(), lifetime())))))
-            .map(|s| iter::once(Token::Primitive(Primitive::Ref(s)))),
-        maybe_spaces(),
-        type_like(),
-    )
 }
 
 fn ref_type<'a>() -> parser_iter_token!('a) {
     chain3(
-        recognize((char('&'), optional(lifetime())))
-            .map(|s| iter::once(Token::Primitive(Primitive::Ref(s)))),
+        recognize((
+            char('&'),
+            optional(string("mut")),
+            optional(attempt((spaces(), lifetime()))),
+        ))
+        .map(|s| iter::once(Token::Primitive(Primitive::Ref(s)))),
         maybe_spaces(),
         type_like(),
     )
