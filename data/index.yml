@@ -425,7 +425,7 @@ main:
             - "is_ascii () -> bool"
             - "repeat (usize) -> String"
             - "encode_utf16 () -> Iterator<Item = u16>"
-            - "parse () -> Result<F, E> where F: FromStr"
+            - "parse () -> Result<F, F::Err> where F: FromStr"
     - type: "&mut str"
       groups:
         - name: "Splitting to two parts"

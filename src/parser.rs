@@ -136,7 +136,7 @@ fn nested_type_like_list<'a>() -> parser_str_to_iter_token!('a) {
 }
 
 fn named_type<'a>() -> parser_str_to_iter_token!('a) {
-    chain3(
+    chain4(
         // Optional `dyn` keyword
         optional_tokens(text((string("dyn"), skip_many1(space())))),
         // Name
@@ -149,6 +149,11 @@ fn named_type<'a>() -> parser_str_to_iter_token!('a) {
         }),
         // Optional parameters
         optional_tokens(chain3(lex("<"), sep1_by_lex(type_param, ","), lex(">"))),
+        // Associated items
+        many::<TokenStream<'_>, _>(attempt(chain2(
+            lex("::"),
+            identifier_str().map(Token::AssocType).map(iter::once),
+        ))),
     )
 }
 
@@ -359,6 +364,7 @@ mod tests {
         assert_eq!(parse("&[Foo]"), tokens!(&"" @[Foo]));
         assert_eq!(parse("()"), tokens!(@()));
         assert_eq!(parse("(Foo, &Bar)"), tokens!(@(Foo ", " &"" Bar)));
+        assert_eq!(parse("Foo::Err"), tokens!(Foo "::" +Err));
         assert_eq!(parse("() -> Foo"), tokens!("(" ") -> " Foo));
         assert_eq!(
             parse("(Iterator<Item = T>) -> Result<(), T>"),
