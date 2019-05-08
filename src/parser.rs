@@ -22,13 +22,19 @@ pub fn parse_item(input: &str) -> Result<(&str, TokenStream<'_>), ()> {
 
 // TODO: Replace this macro with named existential type when it's available.
 // See https://github.com/rust-lang/rust/issues/34511
-macro_rules! parser_iter_token {
+macro_rules! parser_str_to_iter_token {
     ($a:lifetime) => {
-        impl Parser<Input = &$a str, Output = impl Iterator<Item = Token<$a>>>
+        parser_str_to!($a, impl Iterator<Item = Token<$a>>)
+    };
+}
+
+macro_rules! parser_str_to {
+    ($a:lifetime, $ty:ty) => {
+        impl Parser<Input = &$a str, Output = $ty>
     }
 }
 
-fn item_after_name<'a>() -> parser_iter_token!('a) {
+fn item_after_name<'a>() -> parser_str_to_iter_token!('a) {
     (
         lex("("),
         nested_type_like_list(),
@@ -60,7 +66,7 @@ parser! {
     }
 }
 
-fn type_like_inner<'a>() -> impl Parser<Input = &'a str, Output = BoxedTokenIter<'a>> {
+fn type_like_inner<'a>() -> parser_str_to!('a, BoxedTokenIter<'a>) {
     sep1_by_lex(single_type_like, "|").map(to_boxed_iter)
 }
 
@@ -68,7 +74,7 @@ fn to_boxed_iter<'a, T>(iter: impl Iterator<Item = T> + 'a) -> Box<dyn Iterator<
     Box::new(iter)
 }
 
-fn single_type_like<'a>() -> parser_iter_token!('a) {
+fn single_type_like<'a>() -> parser_str_to_iter_token!('a) {
     choice((
         attempt(ref_type()).map(Either5::One),
         attempt(slice_type()).map(Either5::Two),
@@ -78,7 +84,7 @@ fn single_type_like<'a>() -> parser_iter_token!('a) {
     ))
 }
 
-fn ref_type<'a>() -> parser_iter_token!('a) {
+fn ref_type<'a>() -> parser_str_to_iter_token!('a) {
     chain3(
         recognize((
             char('&'),
@@ -91,7 +97,7 @@ fn ref_type<'a>() -> parser_iter_token!('a) {
     )
 }
 
-fn slice_type<'a>() -> parser_iter_token!('a) {
+fn slice_type<'a>() -> parser_str_to_iter_token!('a) {
     chain3(
         wrap("[", Primitive::SliceStart),
         type_like(),
@@ -99,7 +105,7 @@ fn slice_type<'a>() -> parser_iter_token!('a) {
     )
 }
 
-fn fn_type<'a>() -> parser_iter_token!('a) {
+fn fn_type<'a>() -> parser_str_to_iter_token!('a) {
     chain4(
         lex("("),
         nested_type_like_list(),
@@ -108,7 +114,7 @@ fn fn_type<'a>() -> parser_iter_token!('a) {
     )
 }
 
-fn tuple_type<'a>() -> parser_iter_token!('a) {
+fn tuple_type<'a>() -> parser_str_to_iter_token!('a) {
     choice((
         attempt(wrap("()", Primitive::Unit)).map(Either2::One),
         chain3(
@@ -120,7 +126,7 @@ fn tuple_type<'a>() -> parser_iter_token!('a) {
     ))
 }
 
-fn nested_type_like_list<'a>() -> parser_iter_token!('a) {
+fn nested_type_like_list<'a>() -> parser_str_to_iter_token!('a) {
     optional(
         sep1_by_lex(type_like, ",")
             .map(Iterator::collect)
@@ -129,7 +135,7 @@ fn nested_type_like_list<'a>() -> parser_iter_token!('a) {
     .map(IntoIterator::into_iter)
 }
 
-fn named_type<'a>() -> parser_iter_token!('a) {
+fn named_type<'a>() -> parser_str_to_iter_token!('a) {
     chain3(
         // Optional `dyn` keyword
         optional_tokens(text((string("dyn"), skip_many1(space())))),
@@ -156,7 +162,7 @@ fn is_primitive(ident: &str) -> bool {
     }
 }
 
-fn type_param<'a>() -> parser_iter_token!('a) {
+fn type_param<'a>() -> parser_str_to_iter_token!('a) {
     choice((
         attempt(lifetime_param()).map(Either3::One),
         attempt(assoc_type_param()).map(Either3::Two),
@@ -164,21 +170,24 @@ fn type_param<'a>() -> parser_iter_token!('a) {
     ))
 }
 
-fn lifetime_param<'a>() -> parser_iter_token!('a) {
+fn lifetime_param<'a>() -> parser_str_to_iter_token!('a) {
     text(lifetime())
 }
 
-fn assoc_type_param<'a>() -> parser_iter_token!('a) {
+fn assoc_type_param<'a>() -> parser_str_to_iter_token!('a) {
     chain3(identifier(), lex("="), type_like())
 }
 
-fn optional_tokens<'a>(inner: parser_iter_token!('a)) -> parser_iter_token!('a) {
+fn optional_tokens<'a>(inner: parser_str_to_iter_token!('a)) -> parser_str_to_iter_token!('a) {
     optional(attempt(inner))
         .map(IntoIterator::into_iter)
         .map(Iterator::flatten)
 }
 
-fn sep1_by_lex<'a, P, I>(parser_fn: impl Fn() -> P, sep: &'static str) -> parser_iter_token!('a)
+fn sep1_by_lex<'a, P, I>(
+    parser_fn: impl Fn() -> P,
+    sep: &'static str,
+) -> parser_str_to_iter_token!('a)
 where
     P: Parser<Input = &'a str, Output = I>,
     I: Iterator<Item = Token<'a>>,
@@ -189,11 +198,11 @@ where
     )
 }
 
-fn lex<'a>(s: &'static str) -> parser_iter_token!('a) {
+fn lex<'a>(s: &'static str) -> parser_str_to_iter_token!('a) {
     text((spaces(), string(s), spaces()))
 }
 
-fn wrap<'a>(inner: &'static str, token: impl Into<Token<'a>>) -> parser_iter_token!('a) {
+fn wrap<'a>(inner: &'static str, token: impl Into<Token<'a>>) -> parser_str_to_iter_token!('a) {
     let token = token.into();
     chain3(
         maybe_spaces(),
@@ -202,14 +211,14 @@ fn wrap<'a>(inner: &'static str, token: impl Into<Token<'a>>) -> parser_iter_tok
     )
 }
 
-fn maybe_spaces<'a>() -> parser_iter_token!('a) {
+fn maybe_spaces<'a>() -> parser_str_to_iter_token!('a) {
     recognize(spaces()).map(|s| match s {
         "" => None.into_iter(),
         s => Some(Token::Text(s)).into_iter(),
     })
 }
 
-fn text<'a>(inner: impl Parser<Input = &'a str>) -> parser_iter_token!('a) {
+fn text<'a>(inner: impl Parser<Input = &'a str>) -> parser_str_to_iter_token!('a) {
     text_token(inner).map(iter::once)
 }
 
@@ -219,23 +228,23 @@ fn text_token<'a>(
     recognize(inner).map(Token::Text)
 }
 
-fn lifetime<'a>() -> impl Parser<Input = &'a str, Output = &'a str> {
+fn lifetime<'a>() -> parser_str_to!('a, &'a str) {
     recognize((char('\''), skip_many1(letter())))
 }
 
-fn identifier<'a>() -> parser_iter_token!('a) {
+fn identifier<'a>() -> parser_str_to_iter_token!('a) {
     identifier_str().map(Token::Identifier).map(iter::once)
 }
 
-fn identifier_str<'a>() -> impl Parser<Input = &'a str, Output = &'a str> {
+fn identifier_str<'a>() -> parser_str_to!('a, &'a str) {
     recognize(skip_many1(choice((alpha_num(), char('_')))))
 }
 
 macro_rules! impl_chain {
     ($name:ident: $($v:ident)+) => {
         fn $name<'a>($(
-            $v: impl Parser<Input = &'a str, Output = impl IntoIterator<Item = Token<'a>>>,
-        )+) -> parser_iter_token!('a) {
+            $v: parser_str_to!('a, impl IntoIterator<Item = Token<'a>>),
+        )+) -> parser_str_to_iter_token!('a) {
             ($($v),+).map(|($($v),+)| {
                 iter::empty() $(.chain($v.into_iter()))+
             })
