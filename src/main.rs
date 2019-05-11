@@ -6,6 +6,9 @@ use crate::page_gen::generate_to;
 use std::env;
 use std::error::Error;
 
+#[macro_use]
+mod macros;
+
 mod input;
 mod page_gen;
 mod parser;
