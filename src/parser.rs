@@ -316,19 +316,8 @@ impl_chain!(chain4: a b c d);
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::*;
-    use crate::token::{Primitive, Token, TokenStream};
+    use crate::token::{Primitive, Range, Token, TokenStream};
     use combine::Parser;
-
-    fn assert_parse<'a, P, I>(mut parser: P, input: &'a str) -> Vec<Token<'a>>
-    where
-        I: Iterator<Item = Token<'a>>,
-        P: Parser<Input = &'a str, Output = I>,
-    {
-        let (tokens, remaining) = parser.parse(input).expect("failed to parse");
-        assert_eq!(remaining, "", "unparsed content");
-        tokens.collect()
-    }
 
     macro_rules! tokens {
         ($($t:tt)*) => {{
@@ -389,60 +378,60 @@ mod tests {
         };
     }
 
-    #[test]
-    fn test_item_after_name() {
-        fn parse(s: &str) -> Vec<Token<'_>> {
-            assert_parse(item_after_name(), s)
-        }
-        assert_eq!(
-            parse(" ((T) -> ())"),
-            tokens!(" (" { "(" { T } ") -> " @() } ")"),
-        );
-        assert_eq!(
-            parse(" ((&T) -> bool) -> (B, B) where B: Default + Extend<T>"),
-            tokens!(
-                " (" { "(" { &"" T } ") -> " @bool } ") " "-> " @( B ", " B )
-                " " where " " B ": " Default " + " Extend "<" T ">"
-            ),
-        );
+    macro_rules! test {
+        ($parser:ident: [$($input:literal => [$($expected:tt)*],)*]) => {
+            #[test]
+            fn $parser() {
+                $(
+                    let (tokens, remaining) = super::$parser().parse($input)
+                        .expect("failed to parse");
+                    assert_eq!(remaining, "", "unparsed content");
+                    assert_eq!(tokens.collect::<Vec<_>>(), tokens!($($expected)*));
+                )*
+            }
+        };
     }
 
-    #[test]
-    #[rustfmt::skip]
-    fn test_type_like() {
-        fn parse(s: &str) -> Vec<Token<'_>> {
-            assert_parse(type_like(), s)
-        }
-        assert_eq!(parse("Foo"), tokens!(Foo));
-        assert_eq!(parse("Option<Foo>"), tokens!(Option "<" Foo ">"));
-        assert_eq!(parse("&Foo"), tokens!(&"" Foo));
-        assert_eq!(parse("&'a Foo"), tokens!(&"'a" " " Foo));
-        assert_eq!(parse("&mut Foo"), tokens!(&"mut" " " Foo));
-        assert_eq!(parse("&mut 'a Foo"), tokens!(&"mut 'a" " " Foo));
-        assert_eq!(parse("&[Foo]"), tokens!(&"" @[Foo]));
-        assert_eq!(parse("()"), tokens!(@()));
-        assert_eq!(parse("(Foo, &Bar)"), tokens!(@(Foo ", " &"" Bar)));
-        assert_eq!(parse("Foo::Err"), tokens!(Foo "::" +Err));
-        // Ranges
-        assert_eq!(parse("usize.. usize"), tokens!(@usize ~Range " " @usize));
-        assert_eq!(parse("usize..=usize"), tokens!(@usize ~RangeInclusive @usize));
-        assert_eq!(parse("     .. usize"), tokens!("     " ~RangeTo " " @usize));
-        assert_eq!(parse("     ..=usize"), tokens!("     " ~RangeToInclusive @usize));
-        assert_eq!(parse("usize..      "), tokens!(@usize ~RangeFrom "      "));
-        assert_eq!(parse("     ..      "), tokens!("     " ~RangeFull "      "));
+    test!(item_after_name: [
+        " ((T) -> ())" => [" (" { "(" { T } ") -> " @() } ")"],
+        " ((&T) -> bool) -> (B, B) where B: Default + Extend<T>" => [
+            " (" { "(" { &"" T } ") -> " @bool } ") " "-> " @( B ", " B )
+            " " where " " B ": " Default " + " Extend "<" T ">"
+        ],
+    ]);
 
-        assert_eq!(parse("() -> Foo"), tokens!("(" ") -> " Foo));
-        assert_eq!(
-            parse("(Iterator<Item = T>) -> Result<(), T>"),
-            tokens!("(" { Iterator "<" +Item " = " T ">" } ") -> " Result "<" @() ", " T ">"),
-        );
-        assert_eq!(
-            parse("(Foo, &(Bar, &mut 'a [Baz])) -> T"),
-            tokens!("(" { Foo ", " &"" @(Bar ", " &"mut 'a" " " @[Baz]) } ") -> " T),
-        );
-        assert_eq!(
-            parse("Foo | &Bar<T> | (Baz) -> bool"),
-            tokens!(Foo " | " &"" Bar "<" T "> " "| " "(" { Baz } ") -> " @bool),
-        );
-    }
+    test!(type_like: [
+        // Named
+        "Foo" => [Foo],
+        "Option<Foo>" => [Option "<" Foo ">"],
+        "Foo::Err" => [Foo "::" +Err],
+        // References
+        "&Foo" => [&"" Foo],
+        "&'a Foo" => [&"'a" " " Foo],
+        "&mut Foo" => [&"mut" " " Foo],
+        "&mut 'a Foo" => [&"mut 'a" " " Foo],
+        "&[Foo]" => [&"" @[Foo]],
+        // Tuple-like
+        "()" => [@()],
+        "(Foo, &Bar)" => [@(Foo ", " &"" Bar)],
+        // Range
+        "usize.. usize" => [@usize ~Range " " @usize],
+        "usize..=usize" => [@usize ~RangeInclusive @usize],
+        "     .. usize" => ["     " ~RangeTo " " @usize],
+        "     ..=usize" => ["     " ~RangeToInclusive @usize],
+        "usize..      " => [@usize ~RangeFrom "      "],
+        "     ..      " => ["     " ~RangeFull "      "],
+        // Function
+        "() -> Foo" => ["(" ") -> " Foo],
+        "(Iterator<Item = T>) -> Result<(), T>" => [
+            "(" { Iterator "<" +Item " = " T ">" } ") -> " Result "<" @() ", " T ">"
+        ],
+        "(Foo, &(Bar, &mut 'a [Baz])) -> T" => [
+            "(" { Foo ", " &"" @(Bar ", " &"mut 'a" " " @[Baz]) } ") -> " T
+        ],
+        // Union (pseudo-type)
+        "Foo | &Bar<T> | (Baz) -> bool" => [
+            Foo " | " &"" Bar "<" T "> " "| " "(" { Baz } ") -> " @bool
+        ],
+    ]);
 }
