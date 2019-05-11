@@ -1,4 +1,5 @@
-use crate::token::{Primitive, Token, TokenStream};
+use crate::token::{Primitive, Range, Token, TokenStream};
+use combine::error::StringStreamError;
 use combine::parser::{
     char::{alpha_num, char, letter, space, spaces, string},
     choice::{choice, optional},
@@ -7,7 +8,7 @@ use combine::parser::{
     repeat::{many, skip_many1},
     Parser,
 };
-use either_n::{Either2, Either3, Either5};
+use either_n::{Either2, Either3, Either6};
 use std::iter;
 
 pub fn parse_item(input: &str) -> Result<(&str, TokenStream<'_>), ()> {
@@ -76,11 +77,12 @@ fn to_boxed_iter<'a, T>(iter: impl Iterator<Item = T> + 'a) -> Box<dyn Iterator<
 
 fn single_type_like<'a>() -> parser_str_to_iter_token!('a) {
     choice((
-        attempt(ref_type()).map(Either5::One),
-        attempt(slice_type()).map(Either5::Two),
-        attempt(fn_type()).map(Either5::Three),
-        attempt(tuple_type()).map(Either5::Four),
-        named_type().map(Either5::Five),
+        attempt(ref_type()).map(Either6::One),
+        attempt(slice_type()).map(Either6::Two),
+        attempt(fn_type()).map(Either6::Three),
+        attempt(tuple_type()).map(Either6::Four),
+        attempt(range_type()).map(Either6::Five),
+        named_type().map(Either6::Six),
     ))
 }
 
@@ -133,6 +135,53 @@ fn nested_type_like_list<'a>() -> parser_str_to_iter_token!('a) {
             .map(Token::Nested),
     )
     .map(IntoIterator::into_iter)
+}
+
+#[rustfmt::skip]
+fn range_type<'a>() -> parser_str_to_iter_token!('a) {
+    (
+        optional(named_type()),
+        choice((attempt(lex_str("..=")), attempt(lex_str("..")))),
+        optional(named_type()),
+    )
+        .and_then(|(start, op, end)| {
+            Ok(match (start, op.trim(), end) {
+                (None, "..", None) => {
+                    Either6::One(range_token(op, Range::RangeFull))
+                },
+                (None, "..", Some(end)) => {
+                    Either6::Two(range_token(op, Range::RangeTo).chain(end))
+                },
+                (None, "..=", Some(end)) => {
+                    Either6::Three(range_token(op, Range::RangeToInclusive).chain(end))
+                }
+                (Some(start), "..", None) => {
+                    Either6::Four(start.chain(range_token(op, Range::RangeFrom)))
+                }
+                (Some(start), "..", Some(end)) => {
+                    Either6::Five(start.chain(range_token(op, Range::Range)).chain(end))
+                }
+                (Some(start), "..=", Some(end)) => {
+                    Either6::Six(start.chain(range_token(op, Range::RangeInclusive)).chain(end))
+                },
+                _ => return Err(StringStreamError::UnexpectedParse),
+            })
+        })
+}
+
+fn range_token(s: &str, range: Range) -> impl Iterator<Item = Token<'_>> {
+    let start = match &s[..s.len() - s.trim_start().len()] {
+        "" => None,
+        spaces => Some(Token::Text(spaces)),
+    };
+    let end = match &s[s.trim_end().len()..] {
+        "" => None,
+        spaces => Some(Token::Text(spaces)),
+    };
+    iter::empty()
+        .chain(start)
+        .chain(iter::once(Token::Range(range)))
+        .chain(end)
 }
 
 fn named_type<'a>() -> parser_str_to_iter_token!('a) {
@@ -208,7 +257,11 @@ where
 }
 
 fn lex<'a>(s: &'static str) -> parser_str_to_iter_token!('a) {
-    text((spaces(), string(s), spaces()))
+    text(lex_str(s))
+}
+
+fn lex_str<'a>(s: &'static str) -> parser_str_to!('a, &'a str) {
+    recognize((spaces(), string(s), spaces()))
 }
 
 fn wrap<'a>(inner: &'static str, token: impl Into<Token<'a>>) -> parser_str_to_iter_token!('a) {
@@ -322,6 +375,10 @@ mod tests {
             $result.push(Token::Primitive(Primitive::SliceEnd));
             tokens_impl!($result $($t)*);
         };
+        ($result:ident ~$range:ident $($t:tt)*) => {
+            $result.push(Token::Range(Range::$range));
+            tokens_impl!($result $($t)*);
+        };
         ($result:ident @$ident:ident $($t:tt)*) => {
             $result.push(Token::Primitive(Primitive::Named(stringify!($ident))));
             tokens_impl!($result $($t)*);
@@ -351,6 +408,7 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_type_like() {
         fn parse(s: &str) -> Vec<Token<'_>> {
             assert_parse(type_like(), s)
@@ -365,6 +423,14 @@ mod tests {
         assert_eq!(parse("()"), tokens!(@()));
         assert_eq!(parse("(Foo, &Bar)"), tokens!(@(Foo ", " &"" Bar)));
         assert_eq!(parse("Foo::Err"), tokens!(Foo "::" +Err));
+        // Ranges
+        assert_eq!(parse("usize.. usize"), tokens!(@usize ~Range " " @usize));
+        assert_eq!(parse("usize..=usize"), tokens!(@usize ~RangeInclusive @usize));
+        assert_eq!(parse("     .. usize"), tokens!("     " ~RangeTo " " @usize));
+        assert_eq!(parse("     ..=usize"), tokens!("     " ~RangeToInclusive @usize));
+        assert_eq!(parse("usize..      "), tokens!(@usize ~RangeFrom "      "));
+        assert_eq!(parse("     ..      "), tokens!("     " ~RangeFull "      "));
+
         assert_eq!(parse("() -> Foo"), tokens!("(" ") -> " Foo));
         assert_eq!(
             parse("(Iterator<Item = T>) -> Result<(), T>"),

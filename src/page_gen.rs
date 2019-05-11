@@ -1,6 +1,6 @@
 use crate::input::{Group, InputData, InputItem, Kind, MainData, Part, ReferenceData};
 use crate::parser::parse_item;
-use crate::token::{Primitive, Token, TokenStream};
+use crate::token::{Primitive, Range, Token, TokenStream};
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs::File;
@@ -134,6 +134,7 @@ where
                     write!(self.writer, r#"<span class="assoc-type">{}</span>"#, ty)
                 }
                 Token::Primitive(primitive) => self.generate_primitive(primitive),
+                Token::Range(range) => self.generate_range(range),
                 Token::Nested(nested) => {
                     write!(self.writer, r#"<span class="nested">"#)?;
                     self.generate_tokens(nested)?;
@@ -170,6 +171,24 @@ where
             std = STD_URL,
             name = name,
             text = primitive,
+        )
+    }
+
+    fn generate_range(&mut self, range: Range) -> Result {
+        let name = match range {
+            Range::Range => "Range",
+            Range::RangeFrom => "RangeFrom",
+            Range::RangeFull => "RangeFull",
+            Range::RangeInclusive => "RangeInclusive",
+            Range::RangeTo => "RangeTo",
+            Range::RangeToInclusive => "RangeToInclusive",
+        };
+        write!(
+            self.writer,
+            r#"<a href="{std}ops/struct.{name}.html">{range}</a>"#,
+            std = STD_URL,
+            name = name,
+            range = range
         )
     }
 

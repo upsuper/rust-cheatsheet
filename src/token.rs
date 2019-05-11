@@ -47,6 +47,7 @@ pub enum Token<'a> {
     Primitive(Primitive<'a>),
     Identifier(&'a str),
     AssocType(&'a str),
+    Range(Range),
     Where,
 }
 
@@ -62,6 +63,7 @@ impl Display for Token<'_> {
             Token::Text(s) | Token::Identifier(s) | Token::AssocType(s) => f.write_str(s),
             Token::Nested(s) => write!(f, "{}", s),
             Token::Primitive(p) => write!(f, "{}", p),
+            Token::Range(r) => write!(f, "{}", r),
             Token::Where => f.write_str("where"),
         }
     }
@@ -88,5 +90,24 @@ impl Display for Primitive<'_> {
             Primitive::TupleEnd => f.write_char(')'),
             Primitive::Unit => f.write_str("()"),
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Range {
+    Range,
+    RangeFrom,
+    RangeFull,
+    RangeInclusive,
+    RangeTo,
+    RangeToInclusive,
+}
+
+impl Display for Range {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            Range::Range | Range::RangeFrom | Range::RangeFull | Range::RangeTo => "..",
+            Range::RangeInclusive | Range::RangeToInclusive => "..=",
+        })
     }
 }
