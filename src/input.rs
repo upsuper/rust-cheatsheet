@@ -6,8 +6,8 @@ use std::path::Path;
 #[derive(Debug, Deserialize)]
 pub struct InputData {
     pub base_url: String,
-    pub main: MainData,
-    pub references: ReferenceData,
+    pub main: Vec<Vec<Part>>,
+    pub references: Vec<References>,
 }
 
 impl InputData {
@@ -16,9 +16,6 @@ impl InputData {
         Ok(serde_yaml::from_reader(file)?)
     }
 }
-
-#[derive(Debug, Deserialize)]
-pub struct MainData(pub Vec<Vec<Part>>);
 
 // TODO: try to avoid using untagged here
 // because untagged makes it hard to debug data file when parsing fails.
@@ -98,9 +95,6 @@ impl InputItem {
         }
     }
 }
-
-#[derive(Debug, Deserialize)]
-pub struct ReferenceData(pub Vec<References>);
 
 #[derive(Debug, Deserialize)]
 pub struct References {

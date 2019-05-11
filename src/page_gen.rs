@@ -1,4 +1,4 @@
-use crate::input::{Group, InputData, InputItem, Kind, MainData, Part, ReferenceData};
+use crate::input::{Group, InputData, InputItem, Kind, Part, References};
 use crate::parser::parse_item;
 use crate::token::{Primitive, Range, Token, TokenStream};
 use std::collections::HashMap;
@@ -27,9 +27,8 @@ impl<'a, W> Generator<'a, W>
 where
     W: Write,
 {
-    fn new(writer: W, base_url: &'a str, ref_data: &'a ReferenceData) -> Self {
+    fn new(writer: W, base_url: &'a str, ref_data: &'a [References]) -> Self {
         let references = ref_data
-            .0
             .iter()
             .flat_map(|reference| {
                 let kind = reference.kind;
@@ -47,11 +46,10 @@ where
         }
     }
 
-    fn generate(&mut self, data: &MainData) -> Result {
+    fn generate(&mut self, data: &[Vec<Part>]) -> Result {
         self.writer.write_all(include_bytes!("header.html"))?;
         write!(self.writer, "<main>")?;
-        data.0
-            .iter()
+        data.iter()
             .map(|section| self.generate_section(&section))
             .collect::<Result>()?;
         write!(self.writer, "</main>")?;
