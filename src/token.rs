@@ -44,6 +44,7 @@ where
 pub enum Token<'a> {
     Text(&'a str),
     Nested(TokenStream<'a>),
+    Type(TokenStream<'a>),
     Primitive(Primitive<'a>),
     Identifier(&'a str),
     AssocType(&'a str),
@@ -61,7 +62,7 @@ impl Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Token::Text(s) | Token::Identifier(s) | Token::AssocType(s) => f.write_str(s),
-            Token::Nested(s) => write!(f, "{}", s),
+            Token::Nested(inner) | Token::Type(inner) => write!(f, "{}", inner),
             Token::Primitive(p) => write!(f, "{}", p),
             Token::Range(r) => write!(f, "{}", r),
             Token::Where => f.write_str("where"),

@@ -135,6 +135,7 @@ where
                 }
                 Token::Primitive(primitive) => self.generate_primitive(primitive),
                 Token::Range(range) => self.generate_range(range),
+                Token::Type(ty) => self.generate_tokens(ty),
                 Token::Nested(nested) => {
                     write!(self.writer, r#"<span class="nested">"#)?;
                     self.generate_tokens(nested)?;

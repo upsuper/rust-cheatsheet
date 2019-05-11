@@ -1,7 +1,7 @@
 use crate::token::{Primitive, Range, Token, TokenStream};
 use combine::error::StringStreamError;
 use combine::parser::{
-    char::{alpha_num, char, letter, space, spaces, string},
+    char::{alpha_num, char, letter, spaces, string},
     choice::{choice, optional},
     combinator::attempt,
     range::recognize,
@@ -71,19 +71,30 @@ fn type_like_inner<'a>() -> parser_str_to!('a, BoxedTokenIter<'a>) {
     sep1_by_lex(single_type_like, "|").map(to_boxed_iter)
 }
 
+// Add an extra wrapper for this parser so that we don't have too deep type name.
+parser! {
+    fn single_type_like['a]()(&'a str) -> BoxedTokenIter<'a> {
+        single_type_like_inner()
+    }
+}
+
+fn single_type_like_inner<'a>() -> parser_str_to!('a, BoxedTokenIter<'a>) {
+    single_type_like_token().map(iter::once).map(to_boxed_iter)
+}
+
 fn to_boxed_iter<'a, T>(iter: impl Iterator<Item = T> + 'a) -> Box<dyn Iterator<Item = T> + 'a> {
     Box::new(iter)
 }
 
-fn single_type_like<'a>() -> parser_str_to_iter_token!('a) {
-    choice((
+fn single_type_like_token<'a>() -> parser_str_to!('a, Token<'a>) {
+    to_type_token(choice((
         attempt(ref_type()).map(Either6::One),
         attempt(slice_type()).map(Either6::Two),
         attempt(fn_type()).map(Either6::Three),
         attempt(tuple_type()).map(Either6::Four),
         attempt(range_type()).map(Either6::Five),
         named_type().map(Either6::Six),
-    ))
+    )))
 }
 
 fn ref_type<'a>() -> parser_str_to_iter_token!('a) {
@@ -95,21 +106,21 @@ fn ref_type<'a>() -> parser_str_to_iter_token!('a) {
         ))
         .map(|s| iter::once(Token::Primitive(Primitive::Ref(s)))),
         maybe_spaces(),
-        type_like(),
+        single_type_like(),
     )
 }
 
 fn slice_type<'a>() -> parser_str_to_iter_token!('a) {
     chain3(
-        wrap("[", Primitive::SliceStart),
+        wrap_start("[", Primitive::SliceStart),
         type_like(),
-        wrap("]", Primitive::SliceEnd),
+        wrap_end("]", Primitive::SliceEnd),
     )
 }
 
 fn fn_type<'a>() -> parser_str_to_iter_token!('a) {
     chain4(
-        lex("("),
+        text((char('('), spaces())),
         nested_type_like_list(),
         text((spaces(), char(')'), spaces(), string("->"), spaces())),
         type_like(),
@@ -120,9 +131,9 @@ fn tuple_type<'a>() -> parser_str_to_iter_token!('a) {
     choice((
         attempt(wrap("()", Primitive::Unit)).map(Either2::One),
         chain3(
-            wrap("(", Primitive::TupleStart),
+            wrap_start("(", Primitive::TupleStart),
             nested_type_like_list(),
-            wrap(")", Primitive::TupleEnd),
+            wrap_end(")", Primitive::TupleEnd),
         )
         .map(Either2::Two),
     ))
@@ -137,7 +148,6 @@ fn nested_type_like_list<'a>() -> parser_str_to_iter_token!('a) {
     .map(IntoIterator::into_iter)
 }
 
-#[rustfmt::skip]
 fn range_type<'a>() -> parser_str_to_iter_token!('a) {
     (
         optional(named_type()),
@@ -145,27 +155,21 @@ fn range_type<'a>() -> parser_str_to_iter_token!('a) {
         optional(named_type()),
     )
         .and_then(|(start, op, end)| {
-            Ok(match (start, op.trim(), end) {
-                (None, "..", None) => {
-                    Either6::One(range_token(op, Range::RangeFull))
-                },
-                (None, "..", Some(end)) => {
-                    Either6::Two(range_token(op, Range::RangeTo).chain(end))
-                },
-                (None, "..=", Some(end)) => {
-                    Either6::Three(range_token(op, Range::RangeToInclusive).chain(end))
-                }
-                (Some(start), "..", None) => {
-                    Either6::Four(start.chain(range_token(op, Range::RangeFrom)))
-                }
-                (Some(start), "..", Some(end)) => {
-                    Either6::Five(start.chain(range_token(op, Range::Range)).chain(end))
-                }
-                (Some(start), "..=", Some(end)) => {
-                    Either6::Six(start.chain(range_token(op, Range::RangeInclusive)).chain(end))
-                },
+            let range = match (&start, op.trim(), &end) {
+                (None, "..", None) => Range::RangeFull,
+                (None, "..", Some(_)) => Range::RangeTo,
+                (None, "..=", Some(_)) => Range::RangeToInclusive,
+                (Some(_), "..", None) => Range::RangeFrom,
+                (Some(_), "..", Some(_)) => Range::Range,
+                (Some(_), "..=", Some(_)) => Range::RangeInclusive,
                 _ => return Err(StringStreamError::UnexpectedParse),
-            })
+            };
+            let start = start.into_iter().flatten();
+            let end = end.into_iter().flatten();
+            Ok(iter::empty()
+                .chain(start)
+                .chain(range_token(op, range))
+                .chain(end))
         })
 }
 
@@ -185,9 +189,18 @@ fn range_token(s: &str, range: Range) -> impl Iterator<Item = Token<'_>> {
 }
 
 fn named_type<'a>() -> parser_str_to_iter_token!('a) {
-    chain4(
-        // Optional `dyn` keyword
-        optional_tokens(text((string("dyn"), skip_many1(space())))),
+    chain2(
+        named_type_base().map(|ty| iter::once(Token::Type(ty.collect()))),
+        // Associated items
+        many::<TokenStream<'_>, _>(attempt(chain2(
+            lex("::"),
+            identifier_str().map(Token::AssocType).map(iter::once),
+        ))),
+    )
+}
+
+fn named_type_base<'a>() -> parser_str_to_iter_token!('a) {
+    chain2(
         // Name
         identifier_str().map(|ident| {
             iter::once(if is_primitive(ident) {
@@ -197,13 +210,22 @@ fn named_type<'a>() -> parser_str_to_iter_token!('a) {
             })
         }),
         // Optional parameters
-        optional_tokens(chain3(lex("<"), sep1_by_lex(type_param, ","), lex(">"))),
-        // Associated items
-        many::<TokenStream<'_>, _>(attempt(chain2(
-            lex("::"),
-            identifier_str().map(Token::AssocType).map(iter::once),
-        ))),
+        optional_tokens(chain3(
+            lex("<"),
+            sep1_by_lex(type_param, ","),
+            text((spaces(), char('>'))),
+        )),
     )
+}
+
+fn to_type_token<'a>(inner: parser_str_to_iter_token!('a)) -> parser_str_to!('a, Token<'a>) {
+    inner.map(|ty| {
+        let mut inner: Vec<_> = ty.collect();
+        match inner.as_ref() as &[_] {
+            [Token::Type(_)] => inner.remove(0),
+            _ => Token::Type(TokenStream(inner)),
+        }
+    })
 }
 
 #[rustfmt::skip]
@@ -262,6 +284,25 @@ fn lex<'a>(s: &'static str) -> parser_str_to_iter_token!('a) {
 
 fn lex_str<'a>(s: &'static str) -> parser_str_to!('a, &'a str) {
     recognize((spaces(), string(s), spaces()))
+}
+
+fn wrap_start<'a>(
+    inner: &'static str,
+    token: impl Into<Token<'a>>,
+) -> parser_str_to_iter_token!('a) {
+    let token = token.into();
+    chain2(
+        string(inner).map(move |_| iter::once(token.clone())),
+        maybe_spaces(),
+    )
+}
+
+fn wrap_end<'a>(inner: &'static str, token: impl Into<Token<'a>>) -> parser_str_to_iter_token!('a) {
+    let token = token.into();
+    chain2(
+        maybe_spaces(),
+        string(inner).map(move |_| iter::once(token.clone())),
+    )
 }
 
 fn wrap<'a>(inner: &'static str, token: impl Into<Token<'a>>) -> parser_str_to_iter_token!('a) {
@@ -350,19 +391,25 @@ mod tests {
             tokens_impl!($result $($t)*);
         };
         ($result:ident @() $($t:tt)*) => {
-            $result.push(Token::Primitive(Primitive::Unit));
+            $result.push(Token::Type(TokenStream(vec![
+                Token::Primitive(Primitive::Unit),
+            ])));
             tokens_impl!($result $($t)*);
         };
         ($result:ident @( $($inner:tt)* ) $($t:tt)*) => {
-            $result.push(Token::Primitive(Primitive::TupleStart));
-            $result.push(Token::Nested(TokenStream(tokens!($($inner)*))));
-            $result.push(Token::Primitive(Primitive::TupleEnd));
+            $result.push(Token::Type(TokenStream(vec![
+                Token::Primitive(Primitive::TupleStart),
+                Token::Nested(TokenStream(tokens!($($inner)*))),
+                Token::Primitive(Primitive::TupleEnd),
+            ])));
             tokens_impl!($result $($t)*);
         };
         ($result:ident @[ $($inner:tt)* ] $($t:tt)*) => {
-            $result.push(Token::Primitive(Primitive::SliceStart));
-            tokens_impl!($result $($inner)*);
-            $result.push(Token::Primitive(Primitive::SliceEnd));
+            let mut inner = vec![];
+            inner.push(Token::Primitive(Primitive::SliceStart));
+            tokens_impl!(inner $($inner)*);
+            inner.push(Token::Primitive(Primitive::SliceEnd));
+            $result.push(Token::Type(TokenStream(inner)));
             tokens_impl!($result $($t)*);
         };
         ($result:ident ~$range:ident $($t:tt)*) => {
@@ -370,7 +417,19 @@ mod tests {
             tokens_impl!($result $($t)*);
         };
         ($result:ident @$ident:ident $($t:tt)*) => {
-            $result.push(Token::Primitive(Primitive::Named(stringify!($ident))));
+            $result.push(Token::Type(TokenStream(vec![
+                Token::Primitive(Primitive::Named(stringify!($ident))),
+            ])));
+            tokens_impl!($result $($t)*);
+        };
+        ($result:ident ^$ident:ident $($t:tt)*) => {
+            $result.push(Token::Type(TokenStream(vec![
+                Token::Identifier(stringify!($ident)),
+            ])));
+            tokens_impl!($result $($t)*);
+        };
+        ($result:ident ^[ $($inner:tt)* ] $($t:tt)*) => {
+            $result.push(Token::Type(TokenStream(tokens!($($inner)*))));
             tokens_impl!($result $($t)*);
         };
         ($result:ident { $($inner:tt)* } $($t:tt)*) => {
@@ -394,45 +453,45 @@ mod tests {
     }
 
     test!(item_after_name: [
-        " ((T) -> ())" => [" (" { "(" { T } ") -> " @() } ")"],
+        " ((T) -> ())" => [" (" { ^["(" { ^T } ") -> " @()] } ")"],
         " ((&T) -> bool) -> (B, B) where B: Default + Extend<T>" => [
-            " (" { "(" { &"" T } ") -> " @bool } ") " "-> " @( B ", " B )
-            " " where " " B ": " Default " + " Extend "<" T ">"
+            " (" { ^["(" { ^[&"" ^T] } ") -> " @bool] } ") " "-> " @( ^B ", " ^B )
+            " " where " " ^B ": " ^Default " + " ^[ Extend "<" ^T ">" ]
         ],
     ]);
 
     test!(type_like: [
         // Named
-        "Foo" => [Foo],
-        "Option<Foo>" => [Option "<" Foo ">"],
-        "Foo::Err" => [Foo "::" +Err],
+        "Foo" => [^Foo],
+        "Option<Foo>" => [^[Option "<" ^Foo ">"]],
+        "Foo::Err" => [^[^Foo "::" +Err]],
         // References
-        "&Foo" => [&"" Foo],
-        "&'a Foo" => [&"'a" " " Foo],
-        "&mut Foo" => [&"mut" " " Foo],
-        "&mut 'a Foo" => [&"mut 'a" " " Foo],
-        "&[Foo]" => [&"" @[Foo]],
+        "&Foo" => [^[&"" ^Foo]],
+        "&'a Foo" => [^[&"'a" " " ^Foo]],
+        "&mut Foo" => [^[&"mut" " " ^Foo]],
+        "&mut 'a Foo" => [^[&"mut 'a" " " ^Foo]],
+        "&[Foo]" => [^[&"" @[^Foo]]],
         // Tuple-like
         "()" => [@()],
-        "(Foo, &Bar)" => [@(Foo ", " &"" Bar)],
+        "(Foo, &Bar)" => [@(^Foo ", " ^[&"" ^Bar])],
         // Range
-        "usize.. usize" => [@usize ~Range " " @usize],
-        "usize..=usize" => [@usize ~RangeInclusive @usize],
-        "     .. usize" => ["     " ~RangeTo " " @usize],
-        "     ..=usize" => ["     " ~RangeToInclusive @usize],
-        "usize..      " => [@usize ~RangeFrom "      "],
-        "     ..      " => ["     " ~RangeFull "      "],
+        "usize.. usize" => [^[@usize ~Range " " @usize]],
+        "usize..=usize" => [^[@usize ~RangeInclusive @usize]],
+        "     .. usize" => [^["     " ~RangeTo " " @usize]],
+        "     ..=usize" => [^["     " ~RangeToInclusive @usize]],
+        "usize..      " => [^[@usize ~RangeFrom "      "]],
+        "     ..      " => [^["     " ~RangeFull "      "]],
         // Function
-        "() -> Foo" => ["(" ") -> " Foo],
+        "() -> Foo" => [^["(" ") -> " ^Foo]],
         "(Iterator<Item = T>) -> Result<(), T>" => [
-            "(" { Iterator "<" +Item " = " T ">" } ") -> " Result "<" @() ", " T ">"
+            ^["(" { ^[Iterator "<" +Item " = " ^T ">"] } ") -> " ^[Result "<" @() ", " ^T ">"]]
         ],
         "(Foo, &(Bar, &mut 'a [Baz])) -> T" => [
-            "(" { Foo ", " &"" @(Bar ", " &"mut 'a" " " @[Baz]) } ") -> " T
+            ^["(" { ^Foo ", " ^[&"" @(^Bar ", " ^[&"mut 'a" " " @[^Baz]])] } ") -> " ^T]
         ],
         // Union (pseudo-type)
         "Foo | &Bar<T> | (Baz) -> bool" => [
-            Foo " | " &"" Bar "<" T "> " "| " "(" { Baz } ") -> " @bool
+            ^Foo " | " ^[&"" ^[Bar "<" ^T ">"]] " | " ^["(" { ^Baz } ") -> " @bool]
         ],
     ]);
 }
