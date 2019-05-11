@@ -15,3 +15,6 @@ v_htmlescape = "0.4.3"
 [dependencies.serde]
 version = "1.0.90"
 features = ["derive"]
+
+[dev-dependencies]
+pretty_assertions = "0.6.1"

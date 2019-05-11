@@ -318,6 +318,7 @@ impl_chain!(chain4: a b c d);
 mod tests {
     use crate::token::{Primitive, Range, Token, TokenStream};
     use combine::Parser;
+    use pretty_assertions::assert_eq;
 
     macro_rules! tokens {
         ($($t:tt)*) => {{
