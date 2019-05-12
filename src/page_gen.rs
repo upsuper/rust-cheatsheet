@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::{self, Write};
+use std::marker::PhantomData;
 use std::path::Path;
 use v_htmlescape::escape;
 
@@ -13,12 +14,12 @@ const STD_URL: &str = "https://doc.rust-lang.org/std/";
 type Result = io::Result<()>;
 
 pub fn generate_to(path: impl AsRef<Path>, input: &InputData) -> Result {
-    let file = File::create(path)?;
-    Generator::new(file, &input.base_url, &input.references).generate(&input.main)
+    let mut file = File::create(path)?;
+    Generator::new(&input.base_url, &input.references).generate(&mut file, &input.main)
 }
 
 struct Generator<'a, W> {
-    writer: W,
+    writer_phantom: PhantomData<W>,
     base_url: &'a str,
     references: HashMap<&'a str, Reference<'a>>,
 }
@@ -27,7 +28,7 @@ impl<'a, W> Generator<'a, W>
 where
     W: Write,
 {
-    fn new(writer: W, base_url: &'a str, ref_data: &'a [References]) -> Self {
+    fn new(base_url: &'a str, ref_data: &'a [References]) -> Self {
         let references = ref_data
             .iter()
             .flat_map(|reference| {
@@ -40,25 +41,25 @@ where
             })
             .collect();
         Generator {
-            writer,
+            writer_phantom: PhantomData,
             base_url,
             references,
         }
     }
 
-    fn generate(&mut self, data: &[Vec<Part>]) -> Result {
-        self.writer.write_all(include_bytes!("header.html"))?;
-        write!(self.writer, "<main>")?;
+    fn generate(&self, writer: &mut W, data: &[Vec<Part>]) -> Result {
+        writer.write_all(include_bytes!("header.html"))?;
+        write!(writer, "<main>")?;
         data.iter()
-            .map(|section| self.generate_section(&section))
+            .map(|section| self.generate_section(writer, &section))
             .collect::<Result>()?;
-        write!(self.writer, "</main>")?;
-        self.writer.write_all(include_bytes!("footer.html"))?;
+        write!(writer, "</main>")?;
+        writer.write_all(include_bytes!("footer.html"))?;
         Ok(())
     }
 
-    fn generate_section(&mut self, section: &[Part]) -> Result {
-        write!(self.writer, "<section>")?;
+    fn generate_section(&self, writer: &mut W, section: &[Part]) -> Result {
+        write!(writer, "<section>")?;
         let mut last_kind = None;
         let mut last_path = None;
         section
@@ -66,40 +67,40 @@ where
             .map(|part| {
                 let info = self.build_part_info(part, &mut last_kind, &mut last_path);
                 write!(
-                    self.writer,
+                    writer,
                     r#"<h2><a href="{}">{}</a></h2>"#,
                     info.url,
                     escape(info.title)
                 )?;
                 info.groups
                     .iter()
-                    .map(|group| self.generate_group(group, &info))
+                    .map(|group| self.generate_group(writer, group, &info))
                     .collect::<Result>()
             })
             .collect::<Result>()?;
-        write!(self.writer, "</section>")?;
+        write!(writer, "</section>")?;
         Ok(())
     }
 
-    fn generate_group(&mut self, group: &Group, part_info: &PartInfo) -> Result {
-        write!(self.writer, "<h3>{}</h3>", escape(&group.name))?;
-        write!(self.writer, "<ul>")?;
+    fn generate_group(&self, writer: &mut W, group: &Group, part_info: &PartInfo) -> Result {
+        write!(writer, "<h3>{}</h3>", escape(&group.name))?;
+        write!(writer, "<ul>")?;
         group
             .items
             .iter()
-            .map(|item| self.generate_item(item, part_info))
+            .map(|item| self.generate_item(writer, item, part_info))
             .collect::<Result>()?;
-        write!(self.writer, "</ul>")?;
+        write!(writer, "</ul>")?;
         Ok(())
     }
 
-    fn generate_item(&mut self, item: &InputItem, part_info: &PartInfo) -> Result {
+    fn generate_item(&self, writer: &mut W, item: &InputItem, part_info: &PartInfo) -> Result {
         let kind = match part_info.fn_type {
             FunctionType::Function => "fn",
             FunctionType::Method => "method",
         };
-        write!(self.writer, r#"<li class="item-{}">"#, kind)?;
-        write!(self.writer, r#"<span class="prefix-fn">fn </span>"#)?;
+        write!(writer, r#"<li class="item-{}">"#, kind)?;
+        write!(writer, r#"<span class="prefix-fn">fn </span>"#)?;
         let (name, tokens) = parse_item(item.content())
             .map_err(|_| format!("failed to parse `{}`", item.content()))
             .unwrap();
@@ -111,52 +112,50 @@ where
             },
         };
         write!(
-            self.writer,
+            writer,
             r#"<a href="{}{}" class="{}">{}</a>"#,
             part_info.url, url, kind, name
         )?;
-        self.generate_tokens(tokens)?;
-        write!(self.writer, "</li>")?;
+        self.generate_tokens(writer, &tokens)?;
+        write!(writer, "</li>")?;
         Ok(())
     }
 
-    fn generate_tokens(&mut self, tokens: TokenStream<'_>) -> Result {
+    fn generate_tokens(&self, writer: &mut W, tokens: &TokenStream<'_>) -> Result {
         tokens
             .0
-            .into_iter()
+            .iter()
             .map(|token| match token {
-                Token::Text(text) => write!(self.writer, "{}", escape(text)),
-                Token::Where => write!(self.writer, r#"<span class="where">where</span>"#),
-                Token::Identifier(ident) => self.generate_identifier(ident),
-                Token::AssocType(ty) => {
-                    write!(self.writer, r#"<span class="assoc-type">{}</span>"#, ty)
-                }
-                Token::Primitive(primitive) => self.generate_primitive(primitive),
-                Token::Range(range) => self.generate_range(range),
-                Token::Type(ty) => self.generate_tokens(ty),
+                Token::Text(text) => write!(writer, "{}", escape(text)),
+                Token::Where => write!(writer, r#"<span class="where">where</span>"#),
+                Token::Identifier(ident) => self.generate_identifier(writer, ident),
+                Token::AssocType(ty) => write!(writer, r#"<span class="assoc-type">{}</span>"#, ty),
+                Token::Primitive(primitive) => self.generate_primitive(writer, primitive),
+                Token::Range(range) => self.generate_range(writer, range),
+                Token::Type(ty) => self.generate_tokens(writer, ty),
                 Token::Nested(nested) => {
-                    write!(self.writer, r#"<span class="nested">"#)?;
-                    self.generate_tokens(nested)?;
-                    write!(self.writer, "</span>")
+                    write!(writer, r#"<span class="nested">"#)?;
+                    self.generate_tokens(writer, nested)?;
+                    write!(writer, "</span>")
                 }
             })
             .collect()
     }
 
-    fn generate_identifier(&mut self, ident: &str) -> Result {
+    fn generate_identifier(&self, writer: &mut W, ident: &str) -> Result {
         match self.references.get(ident) {
             Some(r) => write!(
-                self.writer,
+                writer,
                 r#"<a href="{url}" class="{class}">{ident}</a>"#,
                 url = r.url,
                 class = r.kind.to_str(),
                 ident = ident,
             ),
-            None => write!(self.writer, "{}", ident),
+            None => write!(writer, "{}", ident),
         }
     }
 
-    fn generate_primitive(&mut self, primitive: Primitive<'_>) -> Result {
+    fn generate_primitive(&self, writer: &mut W, primitive: &Primitive<'_>) -> Result {
         let name = match primitive {
             Primitive::SliceStart | Primitive::SliceEnd => "slice",
             Primitive::TupleStart | Primitive::TupleEnd => "tuple",
@@ -165,7 +164,7 @@ where
             Primitive::Named(name) => name,
         };
         write!(
-            self.writer,
+            writer,
             r#"<a href="{std}primitive.{name}.html" class="primitive">{text}</a>"#,
             std = STD_URL,
             name = name,
@@ -173,7 +172,7 @@ where
         )
     }
 
-    fn generate_range(&mut self, range: Range) -> Result {
+    fn generate_range(&self, writer: &mut W, range: &Range) -> Result {
         let name = match range {
             Range::Range => "Range",
             Range::RangeFrom => "RangeFrom",
@@ -183,7 +182,7 @@ where
             Range::RangeToInclusive => "RangeToInclusive",
         };
         write!(
-            self.writer,
+            writer,
             r#"<a href="{std}ops/struct.{name}.html">{range}</a>"#,
             std = STD_URL,
             name = name,
