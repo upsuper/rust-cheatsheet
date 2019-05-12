@@ -53,7 +53,7 @@ main ul {
 main li {
   white-space: pre;
 }
-main li::before {
+main li.item::before {
   content: "=> ";
   margin-left: -2em;
 }

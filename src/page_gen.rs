@@ -99,7 +99,7 @@ where
             FunctionType::Function => "fn",
             FunctionType::Method => "method",
         };
-        write!(writer, r#"<li class="item-{}">"#, kind)?;
+        write!(writer, r#"<li class="item item-{}">"#, kind)?;
         write!(writer, r#"<span class="prefix-fn">fn </span>"#)?;
         let (name, tokens) = parse_item(item.content())
             .map_err(|_| format!("failed to parse `{}`", item.content()))
