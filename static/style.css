@@ -70,8 +70,40 @@ main li a {
   -moz-user-select: none;
   user-select: none;
 }
-.nested .nested { --opacity: 0.4; }
 .nested { --opacity: 0.6; }
+.nested .nested { --opacity: 0.4; }
+.trait-matched {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  outline: 0 none;
+}
+.trait-matched:focus-within .impls {
+  display: block;
+}
+.impls {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  cursor: auto;
+  --opacity: 1;
+}
+.impls .nested { --opacity: 0.6; }
+.impls .nested .nested { --opacity: 0.4; }
+.impls h4 {
+  font: inherit;
+  margin: 0;
+  width: max-content;
+}
+.impls ul {
+  padding: 2px 10px;
+  margin: 0 -10px;
+  border: 1px solid;
+  border-radius: 5px;
+  width: max-content;
+}
 footer {
   font-size: 0.6em;
   position: fixed;

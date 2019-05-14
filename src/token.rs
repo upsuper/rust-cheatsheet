@@ -4,6 +4,59 @@ use std::iter::FromIterator;
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct TokenStream<'a>(pub Vec<Token<'a>>);
 
+impl<'a> TokenStream<'a> {
+    pub fn matches(
+        &'a self,
+        pat: &TokenStream<'_>,
+        generic: Option<&str>,
+    ) -> Result<Option<&'a TokenStream<'a>>, ()> {
+        let mut replacement = None;
+        if tokens_match(self, pat, generic, &mut replacement) {
+            Ok(replacement)
+        } else {
+            Err(())
+        }
+    }
+}
+
+fn tokens_match<'a>(
+    tokens: &'a TokenStream<'a>,
+    pat: &TokenStream<'_>,
+    generic: Option<&str>,
+    replacement: &mut Option<&'a TokenStream<'a>>,
+) -> bool {
+    tokens
+        .0
+        .iter()
+        .zip(pat.0.iter())
+        .all(|(token, pat)| match (token, pat) {
+            (Token::Where, Token::Where) => true,
+            (Token::Identifier(this), Token::Identifier(pat)) => this == pat,
+            (Token::Primitive(this), Token::Primitive(pat)) => this == pat,
+            (Token::Range(this), Token::Range(pat)) => this == pat,
+            (Token::AssocType(this), Token::AssocType(pat)) => this == pat,
+            (Token::Nested(this), Token::Nested(pat)) => {
+                tokens_match(this, pat, generic, replacement)
+            }
+            (Token::Text(this), Token::Text(pat)) => this
+                .split_ascii_whitespace()
+                .zip(pat.split_ascii_whitespace())
+                .all(|(this, pat)| this == pat),
+            (Token::Type(this), Token::Type(pat)) => match (pat.0.as_slice(), generic) {
+                ([Token::Identifier(ident)], Some(generic)) if *ident == generic => {
+                    if let Some(replacement) = replacement {
+                        tokens_match(this, replacement, None, &mut None)
+                    } else {
+                        *replacement = Some(this);
+                        true
+                    }
+                }
+                _ => tokens_match(this, pat, generic, replacement),
+            },
+            _ => false,
+        })
+}
+
 impl Display for TokenStream<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.iter().map(|token| write!(f, "{}", token)).collect()
@@ -110,5 +163,70 @@ impl Display for Range {
             Range::Range | Range::RangeFrom | Range::RangeFull | Range::RangeTo => "..",
             Range::RangeInclusive | Range::RangeToInclusive => "..=",
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Token;
+    use crate::parser::parse_type;
+
+    #[test]
+    fn token_stream_matches() {
+        fn check_match(
+            pat: &str,
+            generic: Option<&str>,
+            cases: &[(&str, Result<Option<&[Token<'_>]>, ()>)],
+        ) {
+            let pat = parse_type(pat).unwrap();
+            for (ty, expected) in cases.iter() {
+                let ty = parse_type(ty).unwrap();
+                let actual = ty.matches(&pat, generic);
+                let expected = match expected {
+                    Ok(Some([Token::Type(tokens)])) => Ok(Some(tokens)),
+                    Ok(None) => Ok(None),
+                    Err(()) => Err(()),
+                    _ => unreachable!("unexpected `expected`: `{:?}`", expected),
+                };
+                assert_eq!(actual, expected);
+            }
+        }
+        check_match(
+            "Try<Ok = T>",
+            Some("T"),
+            &[
+                ("Try <Ok=usize>", Ok(Some(&tokens!(@usize)))),
+                (
+                    "Try <Ok= Option<T> >",
+                    Ok(Some(&tokens!(^[Option "<" ^T ">"]))),
+                ),
+                (
+                    "Try<Ok= () -> Option<T> >",
+                    Ok(Some(&tokens!(^["(" ") -> " ^[Option "<" ^T ">"]]))),
+                ),
+                ("Try<Err = T>", Err(())),
+                ("Result<Ok = T>", Err(())),
+                ("&Try<Ok = T>", Err(())),
+            ],
+        );
+        check_match(
+            "SliceIndex<[T]>",
+            Some("T"),
+            &[
+                ("SliceIndex<[usize]>", Ok(Some(&tokens!(@usize)))),
+                ("SliceIndex<[()]>", Ok(Some(&tokens!(@())))),
+                ("SliceIndex<[[T]]>", Ok(Some(&tokens!(@[^T])))),
+                ("SliceIndex<T>", Err(())),
+            ],
+        );
+        check_match(
+            "RangeBounds<usize>",
+            None,
+            &[
+                ("RangeBounds<usize>", Ok(None)),
+                ("RangeBounds < usize >", Ok(None)),
+                ("RangeBounds<u8>", Err(())),
+            ],
+        );
     }
 }

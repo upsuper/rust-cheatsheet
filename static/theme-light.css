@@ -1,4 +1,4 @@
-body {
+body, .impls h4, .impls ul {
   color: black;
   background: white;
 }

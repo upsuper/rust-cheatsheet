@@ -71,6 +71,22 @@ fn type_like_inner<'a>() -> parser_str_to!('a, BoxedTokenIter<'a>) {
     sep1_by_lex(single_type_like, "|").map(to_boxed_iter)
 }
 
+pub fn parse_type(input: &str) -> Result<TokenStream<'_>, ()> {
+    single_type_like_token()
+        .parse(input)
+        .map_err(|_| ())
+        .and_then(|(token, remaining)| {
+            let token_stream = match token {
+                Token::Type(inner) => inner,
+                _ => unreachable!(),
+            };
+            match remaining {
+                "" => Ok(token_stream),
+                _ => Err(()),
+            }
+        })
+}
+
 // Add an extra wrapper for this parser so that we don't have too deep type name.
 parser! {
     fn single_type_like['a]()(&'a str) -> BoxedTokenIter<'a> {

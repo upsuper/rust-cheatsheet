@@ -194,10 +194,8 @@ main:
             - "any ((T) -> bool) -> bool"
         - name: "Try iterating"
           items:
-            - "try_for_each ((T) -> Option<()>)    -> Option<()>"
-            - "try_for_each ((T) -> Result<(), E>) -> Result<(), E>"
-            - "try_fold (S, (S, T) -> Option<S>)    -> Option<S>"
-            - "try_fold (S, (S, T) -> Result<S, E>) -> Result<S, E>"
+            - "try_for_each ((T) -> Try<Ok = ()>) -> Try<Ok = ()>"
+            - "try_fold (S, (S, T) -> Try<Ok = S>) -> Try<Ok = S>"
     - mod: "iter"
       path: "std::iter"
       groups:
@@ -246,7 +244,7 @@ main:
           items:
             - "first () -> Option<&T>"
             - "last  () -> Option<&T>"
-            - "get (usize | RangeBounds<usize>) -> Option<&T>"
+            - "get (SliceIndex<[T]>) -> Option<&T>"
             - "iter () -> Iterator<Item = &T>"
         - name: "Length"
           items:
@@ -295,7 +293,7 @@ main:
           items:
             - "first_mut () -> Option<&mut T>"
             - "last_mut  () -> Option<&mut T>"
-            - "get_mut (usize | RangeBounds<usize>) -> Option<&mut T>"
+            - "get_mut (SliceIndex<[T]>) -> Option<&mut T>"
             - "iter_mut () -> Iterator<Item = &mut T>"
     - type: "&mut Vec<T>"
       kind: struct
@@ -380,31 +378,31 @@ main:
             - "lines () -> Iterator<Item = &str>"
             - "split_whitespace () -> Iterator<Item = &str>"
             - "split_ascii_whitespace () -> Iterator<Item = &str>"
-            - "split  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
-            - "rsplit (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
-            - "splitn  (usize, char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
-            - "rsplitn (usize, char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
-            - "split_terminator  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
-            - "rsplit_terminator (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
+            - "split  (Pattern) -> Iterator<Item = &str>"
+            - "rsplit (Pattern) -> Iterator<Item = &str>"
+            - "splitn  (usize, Pattern) -> Iterator<Item = &str>"
+            - "rsplitn (usize, Pattern) -> Iterator<Item = &str>"
+            - "split_terminator  (Pattern) -> Iterator<Item = &str>"
+            - "rsplit_terminator (Pattern) -> Iterator<Item = &str>"
         - name: "Trimming"
           items:
             - "trim       () -> &str"
             - "trim_start () -> &str"
             - "trim_end   () -> &str"
-            - "trim_matches       (char | &str | &[char] | (char) -> bool) -> &str"
-            - "trim_start_matches (char | &str | &[char] | (char) -> bool) -> &str"
-            - "trim_end_matches   (char | &str | &[char] | (char) -> bool) -> &str"
+            - "trim_matches       (Pattern) -> &str"
+            - "trim_start_matches (Pattern) -> &str"
+            - "trim_end_matches   (Pattern) -> &str"
         - name: "Matching and finding"
           items:
-            - "contains    (char | &str | &[char] | (char) -> bool) -> bool"
-            - "starts_with (char | &str | &[char] | (char) -> bool) -> bool"
-            - "ends_with   (char | &str | &[char] | (char) -> bool) -> bool"
-            - "find  (char | &str | &[char] | (char) -> bool) -> Option<usize>"
-            - "rfind (char | &str | &[char] | (char) -> bool) -> Option<usize>"
-            - "matches  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
-            - "rmatches (char | &str | &[char] | (char) -> bool) -> Iterator<Item = &str>"
-            - "match_indices  (char | &str | &[char] | (char) -> bool) -> Iterator<Item = (usize, &str)>"
-            - "rmatch_indices (char | &str | &[char] | (char) -> bool) -> Iterator<Item = (usize, &str)>"
+            - "contains    (Pattern) -> bool"
+            - "starts_with (Pattern) -> bool"
+            - "ends_with   (Pattern) -> bool"
+            - "find  (Pattern) -> Option<usize>"
+            - "rfind (Pattern) -> Option<usize>"
+            - "matches  (Pattern) -> Iterator<Item = &str>"
+            - "rmatches (Pattern) -> Iterator<Item = &str>"
+            - "match_indices  (Pattern) -> Iterator<Item = (usize, &str)>"
+            - "rmatch_indices (Pattern) -> Iterator<Item = (usize, &str)>"
         - name: "Case"
           items:
             - "to_uppercase () -> String"
@@ -414,8 +412,8 @@ main:
             - "eq_ignore_ascii_case (&str) -> bool"
         - name: "Replacing"
           items:
-            - "replace  (char | &str | &[char] | (char) -> bool, &str) -> String"
-            - "replacen (char | &str | &[char] | (char) -> bool, &str, usize) -> String"
+            - "replace  (Pattern, &str) -> String"
+            - "replacen (Pattern, &str, usize) -> String"
         - name: "Length"
           items:
             - "len () -> usize"
@@ -465,6 +463,37 @@ main:
             - "replace_range (RangeBounds<usize>, &str)"
             - "drain (RangeBounds<usize>) -> Iterator<Item = char>"
 
+trait_impls:
+  - pat: "Try<Ok = T>"
+    generic: "T"
+    impls:
+      - "Option<T>"
+      - "Result<T, E>"
+  - pat: "Pattern"
+    impls:
+      - "char"
+      - "&str"
+      - "&[char]"
+      - "(char) -> bool"
+  - pat: "SliceIndex<[T]>"
+    generic: "T"
+    impls:
+      - "usize"
+      - "usize..usize"
+      - "usize.."
+      - "     ..usize"
+      - "usize..=usize"
+      - "     ..=usize"
+      - "     .."
+  - pat: "RangeBounds<usize>"
+    impls:
+      - "usize..usize"
+      - "usize.."
+      - "     ..usize"
+      - "usize..=usize"
+      - "     ..=usize"
+      - "     .."
+
 references:
   - kind: trait
     names:
@@ -484,7 +513,10 @@ references:
       - "std::iter::Sum"
       - "std::marker::Copy"
       - "std::ops::RangeBounds"
+      - "std::ops::Try"
+      - "std::slice::SliceIndex"
       - "std::str::FromStr"
+      - "std::str::pattern::Pattern"
   - kind: enum
     names:
       - "std::option::Option"

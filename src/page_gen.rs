@@ -1,6 +1,7 @@
-use crate::input::{Group, InputData, InputItem, Kind, Part, References};
-use crate::parser::parse_item;
+use crate::input::{Group, InputData, InputItem, Kind, Part, References, TraitImplPattern};
+use crate::parser::{self, parse_item};
 use crate::token::{Primitive, Range, Token, TokenStream};
+use bitflags::bitflags;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs::File;
@@ -15,20 +16,45 @@ type Result = io::Result<()>;
 
 pub fn generate_to(path: impl AsRef<Path>, input: &InputData) -> Result {
     let mut file = File::create(path)?;
-    Generator::new(&input.base_url, &input.references).generate(&mut file, &input.main)
+    Generator::new(&input.base_url, &input.trait_impls, &input.references)
+        .generate(&mut file, &input.main)
 }
 
 struct Generator<'a, W> {
     writer_phantom: PhantomData<W>,
     base_url: &'a str,
+    trait_impls: Vec<TraitImpl<'a>>,
     references: HashMap<&'a str, Reference<'a>>,
+}
+
+struct TraitImpl<'a> {
+    pat: TokenStream<'a>,
+    generic: Option<&'a str>,
+    impls: Vec<TokenStream<'a>>,
 }
 
 impl<'a, W> Generator<'a, W>
 where
     W: Write,
 {
-    fn new(base_url: &'a str, ref_data: &'a [References]) -> Self {
+    fn new(
+        base_url: &'a str,
+        trait_impls: &'a [TraitImplPattern],
+        ref_data: &'a [References],
+    ) -> Self {
+        let trait_impls = trait_impls
+            .iter()
+            .map(|trait_impl| {
+                let pat = parse_type(&trait_impl.pat);
+                let generic = trait_impl.generic.as_ref().map(String::as_str);
+                let impls = trait_impl.impls.iter().map(|ty| parse_type(ty)).collect();
+                TraitImpl {
+                    pat,
+                    generic,
+                    impls,
+                }
+            })
+            .collect();
         let references = ref_data
             .iter()
             .flat_map(|reference| {
@@ -43,6 +69,7 @@ where
         Generator {
             writer_phantom: PhantomData,
             base_url,
+            trait_impls,
             references,
         }
     }
@@ -116,78 +143,138 @@ where
             r#"<a href="{}{}" class="{}">{}</a>"#,
             part_info.url, url, kind, name
         )?;
-        self.generate_tokens(writer, &tokens)?;
+        self.generate_tokens(writer, &tokens, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
         write!(writer, "</li>")?;
         Ok(())
     }
 
-    fn generate_tokens(&self, writer: &mut W, tokens: &TokenStream<'_>) -> Result {
+    fn generate_tokens(&self, writer: &mut W, tokens: &TokenStream<'_>, flags: Flags) -> Result {
         tokens
             .0
             .iter()
             .map(|token| match token {
                 Token::Text(text) => write!(writer, "{}", escape(text)),
                 Token::Where => write!(writer, r#"<span class="where">where</span>"#),
-                Token::Identifier(ident) => self.generate_identifier(writer, ident),
+                Token::Identifier(ident) => self.generate_identifier(writer, ident, flags),
                 Token::AssocType(ty) => write!(writer, r#"<span class="assoc-type">{}</span>"#, ty),
-                Token::Primitive(primitive) => self.generate_primitive(writer, primitive),
-                Token::Range(range) => self.generate_range(writer, range),
-                Token::Type(ty) => self.generate_tokens(writer, ty),
+                Token::Primitive(primitive) => self.generate_primitive(writer, primitive, flags),
+                Token::Range(range) => self.generate_range(writer, *range, flags),
+                Token::Type(ty) => self.generate_type(writer, ty, flags),
                 Token::Nested(nested) => {
                     write!(writer, r#"<span class="nested">"#)?;
-                    self.generate_tokens(writer, nested)?;
+                    self.generate_tokens(writer, nested, flags)?;
                     write!(writer, "</span>")
                 }
             })
             .collect()
     }
 
-    fn generate_identifier(&self, writer: &mut W, ident: &str) -> Result {
+    fn generate_type(&self, writer: &mut W, tokens: &TokenStream<'_>, flags: Flags) -> Result {
+        if !flags.contains(Flags::EXPAND_TRAIT) {
+            return self.generate_tokens(writer, tokens, flags);
+        }
+        let matched = self.trait_impls.iter().find_map(|trait_impl| {
+            match tokens.matches(&trait_impl.pat, trait_impl.generic) {
+                Ok(replacement) => Some((trait_impl, replacement)),
+                Err(()) => None,
+            }
+        });
+        let (trait_impl, replacement) = match matched {
+            Some(matched) => matched,
+            None => return self.generate_tokens(writer, tokens, flags),
+        };
+        write!(writer, r#"<span class="trait-matched" tabindex="-1">"#)?;
+        self.generate_tokens(
+            writer,
+            tokens,
+            flags & !(Flags::LINKIFY | Flags::EXPAND_TRAIT),
+        )?;
+        write!(writer, r#"<aside class="impls">"#)?;
+        let flags = flags & !Flags::EXPAND_TRAIT;
+        write!(writer, "<h4>")?;
+        self.generate_tokens(writer, tokens, flags)?;
+        write!(writer, "</h4><ul>")?;
+        trait_impl
+            .impls
+            .iter()
+            .map(|ty| {
+                let replaced = match (trait_impl.generic, replacement) {
+                    (Some(generic), Some(replacement)) => {
+                        Some(build_tokens_with_replacement(ty, generic, replacement))
+                    }
+                    _ => None,
+                };
+                let ty = replaced.as_ref().unwrap_or(ty);
+                write!(writer, "<li>")?;
+                self.generate_tokens(writer, ty, flags)?;
+                write!(writer, "</li>")?;
+                Ok(())
+            })
+            .collect::<Result>()?;
+        write!(writer, "</ul></aside></span>")?;
+        Ok(())
+    }
+
+    fn generate_identifier(&self, writer: &mut W, ident: &str, flags: Flags) -> Result {
         match self.references.get(ident) {
-            Some(r) => write!(
-                writer,
-                r#"<a href="{url}" class="{class}">{ident}</a>"#,
-                url = r.url,
-                class = r.kind.to_str(),
-                ident = ident,
-            ),
+            Some(r) => {
+                let kind = r.kind.to_str();
+                if flags.contains(Flags::LINKIFY) {
+                    write!(
+                        writer,
+                        r#"<a href="{}" class="{}">{}</a>"#,
+                        r.url, kind, ident
+                    )
+                } else {
+                    write!(writer, r#"<span class="{}">{}</span>"#, kind, ident)
+                }
+            }
             None => write!(writer, "{}", ident),
         }
     }
 
-    fn generate_primitive(&self, writer: &mut W, primitive: &Primitive<'_>) -> Result {
-        let name = match primitive {
-            Primitive::SliceStart | Primitive::SliceEnd => "slice",
-            Primitive::TupleStart | Primitive::TupleEnd => "tuple",
-            Primitive::Unit => "unit",
-            Primitive::Ref(_) => "reference",
-            Primitive::Named(name) => name,
-        };
-        write!(
-            writer,
-            r#"<a href="{std}primitive.{name}.html" class="primitive">{text}</a>"#,
-            std = STD_URL,
-            name = name,
-            text = primitive,
-        )
+    fn generate_primitive(
+        &self,
+        writer: &mut W,
+        primitive: &Primitive<'_>,
+        flags: Flags,
+    ) -> Result {
+        if flags.contains(Flags::LINKIFY) {
+            let name = match primitive {
+                Primitive::SliceStart | Primitive::SliceEnd => "slice",
+                Primitive::TupleStart | Primitive::TupleEnd => "tuple",
+                Primitive::Unit => "unit",
+                Primitive::Ref(_) => "reference",
+                Primitive::Named(name) => name,
+            };
+            write!(
+                writer,
+                r#"<a href="{}primitive.{}.html" class="primitive">{}</a>"#,
+                STD_URL, name, primitive
+            )
+        } else {
+            write!(writer, r#"<span class="primitive">{}</span>"#, primitive)
+        }
     }
 
-    fn generate_range(&self, writer: &mut W, range: &Range) -> Result {
-        let name = match range {
-            Range::Range => "Range",
-            Range::RangeFrom => "RangeFrom",
-            Range::RangeFull => "RangeFull",
-            Range::RangeInclusive => "RangeInclusive",
-            Range::RangeTo => "RangeTo",
-            Range::RangeToInclusive => "RangeToInclusive",
-        };
-        write!(
-            writer,
-            r#"<a href="{std}ops/struct.{name}.html">{range}</a>"#,
-            std = STD_URL,
-            name = name,
-            range = range
-        )
+    fn generate_range(&self, writer: &mut W, range: Range, flags: Flags) -> Result {
+        if flags.contains(Flags::LINKIFY) {
+            let name = match range {
+                Range::Range => "Range",
+                Range::RangeFrom => "RangeFrom",
+                Range::RangeFull => "RangeFull",
+                Range::RangeInclusive => "RangeInclusive",
+                Range::RangeTo => "RangeTo",
+                Range::RangeToInclusive => "RangeToInclusive",
+            };
+            write!(
+                writer,
+                r#"<a href="{}ops/struct.{}.html">{}</a>"#,
+                STD_URL, name, range
+            )
+        } else {
+            write!(writer, "{}", range)
+        }
     }
 
     fn build_part_info<'p>(
@@ -225,6 +312,12 @@ where
     }
 }
 
+fn parse_type(ty: &str) -> TokenStream<'_> {
+    parser::parse_type(ty)
+        .map_err(|_| format!("failed to parse `{}`", ty))
+        .unwrap()
+}
+
 fn build_type_url(base: &str, path: &[&str], kind: Kind, name: &str) -> String {
     let mut url = build_path_url(base, path);
     write!(url, "{}.{}.html", kind.to_str(), name).unwrap();
@@ -238,6 +331,27 @@ fn build_path_url(base: &str, path: &[&str]) -> String {
         url.push('/');
     }
     url
+}
+
+fn build_tokens_with_replacement<'a>(
+    tokens: &'a TokenStream<'a>,
+    generic: &str,
+    replacement: &'a TokenStream<'a>,
+) -> TokenStream<'a> {
+    tokens
+        .0
+        .iter()
+        .map(|token| match token {
+            Token::Type(nested) => Token::Type(match nested.0.as_slice() {
+                [Token::Identifier(ident)] if *ident == generic => replacement.clone(),
+                _ => build_tokens_with_replacement(nested, generic, replacement),
+            }),
+            Token::Nested(nested) => {
+                Token::Nested(build_tokens_with_replacement(nested, generic, replacement))
+            }
+            _ => token.clone(),
+        })
+        .collect()
 }
 
 #[derive(Debug)]
@@ -265,4 +379,13 @@ fn parse_path(s: &str) -> (Box<[&str]>, &str) {
 enum FunctionType {
     Function,
     Method,
+}
+
+bitflags! {
+    struct Flags: u8 {
+        /// Linkify identifiers and symbols when possible
+        const LINKIFY = 0b0001;
+        /// Expand trait to list of types when available
+        const EXPAND_TRAIT = 0b0010;
+    }
 }

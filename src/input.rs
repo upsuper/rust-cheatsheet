@@ -7,6 +7,8 @@ use std::path::Path;
 pub struct InputData {
     pub base_url: String,
     pub main: Vec<Vec<Part>>,
+    #[serde(default)]
+    pub trait_impls: Vec<TraitImplPattern>,
     pub references: Vec<References>,
 }
 
@@ -94,6 +96,13 @@ impl InputItem {
             InputItem::Detailed { trait_impl, .. } => trait_impl.as_ref().map(String::as_str),
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TraitImplPattern {
+    pub pat: String,
+    pub generic: Option<String>,
+    pub impls: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
