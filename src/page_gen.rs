@@ -1,5 +1,5 @@
 use crate::input::{Group, InputData, InputItem, Kind, Part, References, TraitImplPattern};
-use crate::parser::{self, parse_item};
+use crate::parser::{self, ParsedItem};
 use crate::token::{Primitive, Range, Token, TokenStream};
 use bitflags::bitflags;
 use std::collections::HashMap;
@@ -128,22 +128,22 @@ where
         };
         write!(writer, r#"<li class="item item-{}">"#, kind)?;
         write!(writer, r#"<span class="prefix-fn">fn </span>"#)?;
-        let (name, tokens) = parse_item(item.content())
+        let parsed = ParsedItem::parse(item.content())
             .map_err(|_| format!("failed to parse `{}`", item.content()))
             .unwrap();
         let url = match part_info.fn_type {
-            FunctionType::Function => format!("fn.{}.html", name),
+            FunctionType::Function => format!("fn.{}.html", parsed.name),
             FunctionType::Method => match item.trait_impl() {
                 Some(trait_impl) => format!("#impl-{}", escape(trait_impl)),
-                None => format!("#method.{}", name),
+                None => format!("#method.{}", parsed.name),
             },
         };
         write!(
             writer,
             r#"<a href="{}{}" class="{}">{}</a>"#,
-            part_info.url, url, kind, name
+            part_info.url, url, kind, parsed.name
         )?;
-        self.generate_tokens(writer, &tokens, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
+        self.generate_tokens(writer, &parsed.tokens, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
         write!(writer, "</li>")?;
         Ok(())
     }

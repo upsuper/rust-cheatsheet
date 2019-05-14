@@ -11,14 +11,24 @@ use combine::parser::{
 use either_n::{Either2, Either3, Either6};
 use std::iter;
 
-pub fn parse_item(input: &str) -> Result<(&str, TokenStream<'_>), ()> {
-    (identifier_str(), item_after_name())
-        .parse(input)
-        .map_err(|_| ())
-        .and_then(|((name, rest), remaining)| match remaining {
-            "" => Ok((name, TokenStream(rest.collect()))),
-            _ => Err(()),
-        })
+pub struct ParsedItem<'a> {
+    pub name: &'a str,
+    pub tokens: TokenStream<'a>,
+}
+
+impl<'a> ParsedItem<'a> {
+    pub fn parse(input: &'a str) -> Result<Self, ()> {
+        (identifier_str(), item_after_name())
+            .parse(input)
+            .map_err(|_| ())
+            .and_then(|((name, rest), remaining)| match remaining {
+                "" => Ok(ParsedItem {
+                    name,
+                    tokens: TokenStream(rest.collect()),
+                }),
+                _ => Err(()),
+            })
+    }
 }
 
 // TODO: Replace this macro with named existential type when it's available.
