@@ -3,15 +3,16 @@ body {
   background: white;
 }
 h3 {
-  color: #8E908C;
+  color: #8e908c;
 }
-.method, .fn { color: #9a6e31; }
-.trait { color: #7c5af3; }
-.enum { color: #508157; }
-.primitive { color: #2c8093; }
-.struct { color: #ad448e; }
-.assoc-type { color: #ba5d00; }
-.where { color: #4e4c4c; }
+main a, main span { color: rgba(0, 0, 0, var(--opacity)); }
+.method, .fn { color: rgba(154, 110, 49, var(--opacity)); }
+.trait { color: rgba(124, 90, 243, var(--opacity)); }
+.enum { color: rgba(80, 129, 87, var(--opacity)); }
+.primitive { color: rgba(44, 128, 147, var(--opacity)); }
+.struct { color: rgba(173, 68, 142, var(--opacity)); }
+.assoc-type { color: rgba(186, 93, 0, var(--opacity)); }
+.where { color: rgba(78, 76, 76, var(--opacity)); }
 footer {
   background: white;
   color: #999;

@@ -2,6 +2,7 @@
 
 body {
   font: 16px/1.5 'Fira Code', monospace;
+  --opacity: 1;
 }
 main {
   position: absolute;
@@ -69,7 +70,8 @@ main li a {
   -moz-user-select: none;
   user-select: none;
 }
-.nested { opacity: 0.6; }
+.nested .nested { --opacity: 0.4; }
+.nested { --opacity: 0.6; }
 footer {
   font-size: 0.6em;
   position: fixed;
