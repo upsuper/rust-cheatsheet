@@ -122,15 +122,18 @@ where
     }
 
     fn generate_item(&self, writer: &mut W, item: &InputItem, part_info: &PartInfo) -> Result {
-        let kind = match part_info.fn_type {
-            FunctionType::Function => "fn",
-            FunctionType::Method => "method",
-        };
-        write!(writer, r#"<li class="item item-{}">"#, kind)?;
-        write!(writer, r#"<span class="prefix-fn">fn </span>"#)?;
         let parsed = ParsedItem::parse(item.content())
             .map_err(|_| format!("failed to parse `{}`", item.content()))
             .unwrap();
+        let kind = match part_info.fn_type {
+            FunctionType::Function => "fn",
+            FunctionType::Method => match parsed.takes_self {
+                true => "method",
+                false => "fn",
+            },
+        };
+        write!(writer, r#"<li class="item item-{}">"#, kind)?;
+        write!(writer, r#"<span class="prefix-fn">fn </span>"#)?;
         let url = match part_info.fn_type {
             FunctionType::Function => format!("fn.{}.html", parsed.name),
             FunctionType::Method => match item.trait_impl() {

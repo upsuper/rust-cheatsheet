@@ -12,17 +12,19 @@ use either_n::{Either2, Either3, Either6};
 use std::iter;
 
 pub struct ParsedItem<'a> {
+    pub takes_self: bool,
     pub name: &'a str,
     pub tokens: TokenStream<'a>,
 }
 
 impl<'a> ParsedItem<'a> {
     pub fn parse(input: &'a str) -> Result<Self, ()> {
-        (identifier_str(), item_after_name())
+        (optional(string("::")), identifier_str(), item_after_name())
             .parse(input)
             .map_err(|_| ())
-            .and_then(|((name, rest), remaining)| match remaining {
+            .and_then(|((prefix, name, rest), remaining)| match remaining {
                 "" => Ok(ParsedItem {
+                    takes_self: prefix.is_none(),
                     name,
                     tokens: TokenStream(rest.collect()),
                 }),
