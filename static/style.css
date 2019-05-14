@@ -88,6 +88,7 @@ main li a {
   left: 0;
   z-index: 1;
   cursor: auto;
+  pointer-events: none;
   --opacity: 1;
 }
 .impls .nested { --opacity: 0.6; }
@@ -96,6 +97,7 @@ main li a {
   font: inherit;
   margin: 0;
   width: max-content;
+  pointer-events: auto;
 }
 .impls ul {
   padding: 2px 10px;
@@ -103,6 +105,7 @@ main li a {
   border: 1px solid;
   border-radius: 5px;
   width: max-content;
+  pointer-events: auto;
 }
 footer {
   font-size: 0.6em;
