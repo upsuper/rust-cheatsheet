@@ -186,7 +186,7 @@ where
             Some(matched) => matched,
             None => return self.generate_tokens(writer, tokens, flags),
         };
-        write!(writer, r#"<span class="trait-matched" tabindex="-1">"#)?;
+        write!(writer, r#"<span class="trait-matched">"#)?;
         self.generate_tokens(
             writer,
             tokens,

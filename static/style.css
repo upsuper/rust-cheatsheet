@@ -78,7 +78,7 @@ main li a {
   cursor: pointer;
   outline: 0 none;
 }
-.trait-matched:focus-within .impls {
+.trait-matched:hover .impls {
   display: block;
 }
 .impls {
