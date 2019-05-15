@@ -53,6 +53,7 @@ pub enum Kind {
     Primitive,
     Struct,
     Trait,
+    Type,
 }
 
 impl Kind {
@@ -62,6 +63,7 @@ impl Kind {
             Kind::Primitive => "primitive",
             Kind::Struct => "struct",
             Kind::Trait => "trait",
+            Kind::Type => "type",
         }
     }
 }

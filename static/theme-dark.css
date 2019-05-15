@@ -11,7 +11,7 @@ main a, main span { color: rgba(221, 221, 221, var(--opacity)); }
 .enum { color: rgba(130, 176, 137, var(--opacity)); }
 .primitive { color: rgba(67, 174, 199, var(--opacity)); }
 .struct { color: rgba(45, 191, 184, var(--opacity)); }
-.assoc-type { color: rgba(255, 127, 0, var(--opacity)); }
+.type, .assoc-type { color: rgba(255, 127, 0, var(--opacity)); }
 .where { color: rgba(221, 221, 221, var(--opacity)); }
 footer {
   background: #353535;
