@@ -70,7 +70,7 @@ impl Kind {
 
 #[derive(Debug, Deserialize)]
 pub struct Group {
-    pub name: String,
+    pub name: Option<String>,
     pub items: Vec<InputItem>,
 }
 

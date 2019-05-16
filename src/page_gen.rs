@@ -110,7 +110,9 @@ where
     }
 
     fn generate_group(&self, writer: &mut W, group: &Group, part_info: &PartInfo) -> Result {
-        write!(writer, "<h3>{}</h3>", escape(&group.name))?;
+        if let Some(name) = &group.name {
+            write!(writer, "<h3>{}</h3>", escape(name))?;
+        }
         write!(writer, "<ul>")?;
         group
             .items
