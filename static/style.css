@@ -79,16 +79,17 @@ main li a {
   outline: 0 none;
 }
 .trait-matched:hover .impls {
-  display: block;
+  visibility: visible;
 }
 .impls {
-  display: none;
+  visibility: hidden;
   position: absolute;
   top: 0;
   left: 0;
   z-index: 1;
   cursor: auto;
   pointer-events: none;
+  padding-bottom: 2em;
   --opacity: 1;
 }
 .impls .nested { --opacity: 0.6; }
