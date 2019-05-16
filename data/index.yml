@@ -194,8 +194,8 @@ main:
             - "any ((T) -> bool) -> bool"
         - name: "Try iterating"
           items:
-            - "try_for_each ((T) -> Try<Ok = ()>) -> Try<Ok = ()>"
-            - "try_fold (S, (S, T) -> Try<Ok = S>) -> Try<Ok = S>"
+            - "try_for_each   ((T) -> R) -> R where R: Try<Ok = ()>"
+            - "try_fold (S, (S, T) -> R) -> R where R: Try<Ok = S>"
     - mod: "iter"
       path: "std::iter"
       groups:
