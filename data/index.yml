@@ -1,5 +1,3 @@
-base_url: "https://doc.rust-lang.org/"
-
 main:
   # Option & Result
   - - type: "Option<T>"

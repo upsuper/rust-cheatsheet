@@ -1,11 +1,15 @@
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
+const DEFAULT_STD_URL: &str = "https://doc.rust-lang.org/std/";
+
 #[derive(Debug, Deserialize)]
 pub struct InputData {
-    pub base_url: String,
+    #[serde(default)]
+    pub base: BaseUrlMap,
     pub main: Vec<Vec<Part>>,
     #[serde(default)]
     pub trait_impls: Vec<TraitImplPattern>,
@@ -16,6 +20,18 @@ impl InputData {
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, Box<dyn Error>> {
         let file = File::open(path)?;
         Ok(serde_yaml::from_reader(file)?)
+    }
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub struct BaseUrlMap(HashMap<String, String>);
+
+impl BaseUrlMap {
+    pub fn get_url_for(&self, name: &str) -> Option<&str> {
+        self.0.get(name).map(String::as_str).or_else(|| match name {
+            "std" => Some(DEFAULT_STD_URL),
+            _ => None,
+        })
     }
 }
 

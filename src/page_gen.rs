@@ -1,4 +1,6 @@
-use crate::input::{Group, InputData, InputItem, Kind, Part, References, TraitImplPattern};
+use crate::input::{
+    BaseUrlMap, Group, InputData, InputItem, Kind, Part, References, TraitImplPattern,
+};
 use crate::parser::{self, ParsedItem};
 use crate::token::{Primitive, Range, Token, TokenStream};
 use bitflags::bitflags;
@@ -10,19 +12,17 @@ use std::marker::PhantomData;
 use std::path::Path;
 use v_htmlescape::escape;
 
-const STD_URL: &str = "https://doc.rust-lang.org/std/";
-
 type Result = io::Result<()>;
 
 pub fn generate_to(path: impl AsRef<Path>, input: &InputData) -> Result {
     let mut file = File::create(path)?;
-    Generator::new(&input.base_url, &input.trait_impls, &input.references)
+    Generator::new(&input.base, &input.trait_impls, &input.references)
         .generate(&mut file, &input.main)
 }
 
 struct Generator<'a, W> {
     writer_phantom: PhantomData<W>,
-    base_url: &'a str,
+    base: &'a BaseUrlMap,
     trait_impls: Vec<TraitImpl<'a>>,
     references: HashMap<&'a str, Reference<'a>>,
 }
@@ -38,7 +38,7 @@ where
     W: Write,
 {
     fn new(
-        base_url: &'a str,
+        base: &'a BaseUrlMap,
         trait_impls: &'a [TraitImplPattern],
         ref_data: &'a [References],
     ) -> Self {
@@ -61,14 +61,14 @@ where
                 let kind = reference.kind;
                 reference.names.iter().map(move |item| {
                     let (path, name) = parse_path(&item);
-                    let url = build_type_url(base_url, &path, kind, name);
+                    let url = build_type_url(base, &path, kind, name);
                     (name, Reference { kind, path, url })
                 })
             })
             .collect();
         Generator {
             writer_phantom: PhantomData,
-            base_url,
+            base,
             trait_impls,
             references,
         }
@@ -255,7 +255,9 @@ where
             write!(
                 writer,
                 r#"<a href="{}primitive.{}.html" class="primitive">{}</a>"#,
-                STD_URL, name, primitive
+                self.base.get_url_for("std").unwrap(),
+                name,
+                primitive
             )
         } else {
             write!(writer, r#"<span class="primitive">{}</span>"#, primitive)
@@ -275,7 +277,9 @@ where
             write!(
                 writer,
                 r#"<a href="{}ops/struct.{}.html">{}</a>"#,
-                STD_URL, name, range
+                self.base.get_url_for("std").unwrap(),
+                name,
+                range
             )
         } else {
             write!(writer, "{}", range)
@@ -295,7 +299,7 @@ where
                 let path: Vec<_> = m.path.split("::").collect();
                 PartInfo {
                     title: &m.name,
-                    url: build_path_url(self.base_url, &path),
+                    url: build_path_url(self.base, &path),
                     groups: &m.groups,
                     fn_type: FunctionType::Function,
                 }
@@ -308,7 +312,7 @@ where
                 let (path, name) = parse_path(path);
                 PartInfo {
                     title: &t.ty,
-                    url: build_type_url(self.base_url, &path, kind, name),
+                    url: build_type_url(self.base, &path, kind, name),
                     groups: &t.groups,
                     fn_type: FunctionType::Method,
                 }
@@ -323,14 +327,18 @@ fn parse_type(ty: &str) -> TokenStream<'_> {
         .unwrap()
 }
 
-fn build_type_url(base: &str, path: &[&str], kind: Kind, name: &str) -> String {
+fn build_type_url(base: &BaseUrlMap, path: &[&str], kind: Kind, name: &str) -> String {
     let mut url = build_path_url(base, path);
     write!(url, "{}.{}.html", kind.to_str(), name).unwrap();
     url
 }
 
-fn build_path_url(base: &str, path: &[&str]) -> String {
-    let mut url = base.to_string();
+fn build_path_url(base: &BaseUrlMap, path: &[&str]) -> String {
+    let (crate_name, path) = path.split_first().expect("zero-length path");
+    let mut url = base
+        .get_url_for(crate_name)
+        .expect("unknown crate")
+        .to_string();
     for s in path.iter() {
         url.push_str(s);
         url.push('/');
