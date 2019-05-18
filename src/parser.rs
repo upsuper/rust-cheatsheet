@@ -39,6 +39,14 @@ pub fn parse_type(input: &str) -> Result<TokenStream<'_>, ()> {
     })
 }
 
+pub fn parse_impl(input: &str) -> Result<TokenStream<'_>, ()> {
+    let parser = chain2(
+        single_type_like(),
+        optional_tokens(chain2(lex("=>"), sep1_by_lex(assoc_type_param, ","))),
+    );
+    parse(parser, input).map(Iterator::collect)
+}
+
 // TODO: Replace this macro with named existential type when it's available.
 // See https://github.com/rust-lang/rust/issues/34511
 macro_rules! parser_str_to_iter_token {

@@ -1,5 +1,5 @@
 use crate::input::{
-    BaseUrlMap, Group, InputData, InputItem, Kind, Part, References, TraitImplPattern,
+    BaseUrlMap, Group, InputData, InputItem, Kind, Part, References, TraitImplPattern, Type,
 };
 use crate::parser::{self, ParsedItem};
 use crate::token::{Primitive, Range, Token, TokenStream};
@@ -162,10 +162,31 @@ where
             }
         };
         write!(writer, "</hgroup>")?;
+        match part {
+            Part::Type(Type {
+                impls: Some(impls), ..
+            }) => self.generate_impls(writer, impls)?,
+            _ => {}
+        }
         info.groups
             .iter()
             .map(|group| self.generate_group(writer, group, &info))
             .collect::<Result>()
+    }
+
+    fn generate_impls(&self, writer: &mut W, impls: &[String]) -> Result {
+        write!(writer, r#"<ul class="type-impls">"#)?;
+        for impl_item in impls.iter() {
+            let parsed = match parser::parse_impl(impl_item) {
+                Ok(tokens) => tokens,
+                Err(_) => unreachable!("failed to parse impl: {}", impl_item),
+            };
+            write!(writer, "<li>impl ")?;
+            self.generate_tokens(writer, &parsed, Flags::LINKIFY)?;
+            write!(writer, "</li>")?;
+        }
+        write!(writer, "</ul>")?;
+        Ok(())
     }
 
     fn generate_group(&self, writer: &mut W, group: &Group, part_info: &PartInfo) -> Result {

@@ -61,6 +61,7 @@ main > section > h3::before {
 }
 main ul {
   padding-left: 2em;
+  margin-bottom: 1em;
 }
 main li.item::before {
   content: "=> ";
@@ -71,6 +72,9 @@ main li.item-fn::before {
 }
 main li a {
   font-weight: 500;
+}
+.type-impls {
+  padding-left: 0;
 }
 .prefix-fn {
   margin-left: -1.8em;

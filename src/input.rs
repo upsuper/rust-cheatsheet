@@ -58,6 +58,7 @@ pub struct Type {
     #[serde(rename = "type")]
     pub ty: String,
     pub constraints: Option<String>,
+    pub impls: Option<Vec<String>>,
     pub groups: Vec<Group>,
 }
 
