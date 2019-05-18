@@ -19,34 +19,20 @@ pub struct ParsedItem<'a> {
 
 impl<'a> ParsedItem<'a> {
     pub fn parse(input: &'a str) -> Result<Self, ()> {
-        (optional(string("::")), identifier_str(), item_after_name())
-            .parse(input)
-            .map_err(|_| ())
-            .and_then(|((prefix, name, rest), remaining)| match remaining {
-                "" => Ok(ParsedItem {
-                    takes_self: prefix.is_none(),
-                    name,
-                    tokens: TokenStream(rest.collect()),
-                }),
-                _ => Err(()),
-            })
+        let parser = (optional(string("::")), identifier_str(), item_after_name());
+        parse(parser, input).map(|(prefix, name, rest)| ParsedItem {
+            takes_self: prefix.is_none(),
+            name,
+            tokens: TokenStream(rest.collect()),
+        })
     }
 }
 
 pub fn parse_type(input: &str) -> Result<TokenStream<'_>, ()> {
-    single_type_like_token()
-        .parse(input)
-        .map_err(|_| ())
-        .and_then(|(token, remaining)| {
-            let token_stream = match token {
-                Token::Type(inner) => inner,
-                _ => unreachable!(),
-            };
-            match remaining {
-                "" => Ok(token_stream),
-                _ => Err(()),
-            }
-        })
+    parse(single_type_like_token(), input).map(|token| match token {
+        Token::Type(inner) => inner,
+        _ => unreachable!(),
+    })
 }
 
 // TODO: Replace this macro with named existential type when it's available.
@@ -61,6 +47,16 @@ macro_rules! parser_str_to {
     ($a:lifetime, $ty:ty) => {
         impl Parser<Input = &$a str, Output = $ty>
     }
+}
+
+fn parse<'a, T>(mut parser: parser_str_to!('a, T), input: &'a str) -> Result<T, ()> {
+    parser
+        .parse(input)
+        .map_err(|_| ())
+        .and_then(|(result, remaining)| match remaining {
+            "" => Ok(result),
+            _ => Err(()),
+        })
 }
 
 fn item_after_name<'a>() -> parser_str_to_iter_token!('a) {
