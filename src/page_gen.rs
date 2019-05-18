@@ -4,6 +4,7 @@ use crate::input::{
 use crate::parser::{self, ParsedItem};
 use crate::token::{Primitive, Range, Token, TokenStream};
 use bitflags::bitflags;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs::File;
@@ -87,26 +88,73 @@ where
 
     fn generate_section(&self, writer: &mut W, section: &[Part]) -> Result {
         write!(writer, "<section>")?;
-        let mut last_kind = None;
-        let mut last_path = None;
         section
             .iter()
-            .map(|part| {
-                let info = self.build_part_info(part, &mut last_kind, &mut last_path);
-                write!(
-                    writer,
-                    r#"<h2><a href="{}">{}</a></h2>"#,
-                    info.url,
-                    escape(info.title)
-                )?;
-                info.groups
-                    .iter()
-                    .map(|group| self.generate_group(writer, group, &info))
-                    .collect::<Result>()
-            })
+            .map(|part| self.generate_part(writer, part))
             .collect::<Result>()?;
         write!(writer, "</section>")?;
         Ok(())
+    }
+
+    fn generate_part(&self, writer: &mut W, part: &Part) -> Result {
+        let info = match part {
+            Part::Mod(m) => {
+                let path: Vec<_> = m.path.split("::").collect();
+                let url = build_path_url(self.base, &path);
+                write!(
+                    writer,
+                    r#"<h2><a href="{}index.html">{}</a></h2>"#,
+                    url,
+                    escape(&m.name),
+                )?;
+                PartInfo {
+                    base_url: url.into(),
+                    groups: &m.groups,
+                    fn_type: FunctionType::Function,
+                }
+            }
+            Part::Type(t) => {
+                let ty = parse_type(&t.ty);
+                // Unwrap references
+                let mut inner = &ty;
+                loop {
+                    let mut iter = inner.0.iter().filter(|token| !token.is_whitespace_only());
+                    let next_token = match iter.next() {
+                        Some(Token::Primitive(Primitive::Ref(_))) => iter.next(),
+                        _ => break,
+                    };
+                    inner = match next_token {
+                        Some(Token::Type(inner)) => inner,
+                        _ => unreachable!("unexpected token after ref: {:?}", next_token),
+                    };
+                }
+                // Use the first token as the source of base url for this part
+                let first_token = inner.0.first().expect("empty inner");
+                let url = match first_token {
+                    Token::Identifier(ident) => match self.references.get(ident) {
+                        Some(r) => Cow::from(&r.url),
+                        None => unreachable!("unknown name: {}", ident),
+                    },
+                    Token::Primitive(primitive) => self.get_primitive_url(primitive).into(),
+                    _ => unreachable!("unexpected token inside type: {}", first_token),
+                };
+                write!(
+                    writer,
+                    r#"<h2><a href="{}">{}</a></h2>"#,
+                    url,
+                    escape(&t.ty)
+                )?;
+                PartInfo {
+                    base_url: url,
+                    groups: &t.groups,
+                    fn_type: FunctionType::Method,
+                }
+            }
+        };
+        info.groups
+            .iter()
+            .map(|group| self.generate_group(writer, group, &info))
+            .collect::<Result>()
     }
 
     fn generate_group(&self, writer: &mut W, group: &Group, part_info: &PartInfo) -> Result {
@@ -146,7 +194,7 @@ where
         write!(
             writer,
             r#"<a href="{}{}" class="{}">{}</a>"#,
-            part_info.url, url, kind, parsed.name
+            part_info.base_url, url, kind, parsed.name
         )?;
         self.generate_tokens(writer, &parsed.tokens, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
         write!(writer, "</li>")?;
@@ -245,23 +293,27 @@ where
         flags: Flags,
     ) -> Result {
         if flags.contains(Flags::LINKIFY) {
-            let name = match primitive {
-                Primitive::SliceStart | Primitive::SliceEnd => "slice",
-                Primitive::TupleStart | Primitive::TupleEnd => "tuple",
-                Primitive::Unit => "unit",
-                Primitive::Ref(_) => "reference",
-                Primitive::Named(name) => name,
-            };
+            let url = self.get_primitive_url(primitive);
             write!(
                 writer,
-                r#"<a href="{}primitive.{}.html" class="primitive">{}</a>"#,
-                self.base.get_url_for("std").unwrap(),
-                name,
-                primitive
+                r#"<a href="{}" class="primitive">{}</a>"#,
+                url, primitive,
             )
         } else {
             write!(writer, r#"<span class="primitive">{}</span>"#, primitive)
         }
+    }
+
+    fn get_primitive_url(&self, primitive: &Primitive<'_>) -> String {
+        let name = match primitive {
+            Primitive::SliceStart | Primitive::SliceEnd => "slice",
+            Primitive::TupleStart | Primitive::TupleEnd => "tuple",
+            Primitive::Unit => "unit",
+            Primitive::Ref(_) => "reference",
+            Primitive::Named(name) => name,
+        };
+        let std_url = self.base.get_url_for("std").unwrap();
+        format!("{}primitive.{}.html", std_url, name)
     }
 
     fn generate_range(&self, writer: &mut W, range: Range, flags: Flags) -> Result {
@@ -283,40 +335,6 @@ where
             )
         } else {
             write!(writer, "{}", range)
-        }
-    }
-
-    fn build_part_info<'p>(
-        &self,
-        part: &'p Part,
-        last_kind: &mut Option<Kind>,
-        last_path: &mut Option<&'p str>,
-    ) -> PartInfo<'p> {
-        match part {
-            Part::Mod(m) => {
-                *last_kind = None;
-                *last_path = None;
-                let path: Vec<_> = m.path.split("::").collect();
-                PartInfo {
-                    title: &m.name,
-                    url: build_path_url(self.base, &path),
-                    groups: &m.groups,
-                    fn_type: FunctionType::Function,
-                }
-            }
-            Part::Type(t) => {
-                *last_kind = t.kind.or(*last_kind);
-                *last_path = t.path.as_ref().map(String::as_str).or(*last_path);
-                let kind = last_kind.expect("expect kind");
-                let path = last_path.expect("expect path");
-                let (path, name) = parse_path(path);
-                PartInfo {
-                    title: &t.ty,
-                    url: build_type_url(self.base, &path, kind, name),
-                    groups: &t.groups,
-                    fn_type: FunctionType::Method,
-                }
-            }
         }
     }
 }
@@ -375,8 +393,7 @@ struct Reference<'a> {
 }
 
 struct PartInfo<'a> {
-    title: &'a str,
-    url: String,
+    base_url: Cow<'a, str>,
     groups: &'a [Group],
     fn_type: FunctionType,
 }

@@ -1,8 +1,6 @@
 main:
   # Option & Result
   - - type: "Option<T>"
-      kind: enum
-      path: "std::option::Option"
       groups:
         - name: "To inner type"
           items:
@@ -60,8 +58,6 @@ main:
             - "get_or_insert (T) -> &mut T"
             - "get_or_insert_with (() -> T) -> &mut T"
     - type: "Result<T, E>"
-      kind: enum
-      path: "std::result::Result"
       groups:
         - name: "To inner type"
           items:
@@ -107,8 +103,6 @@ main:
             - "iter_mut () -> Iterator<Item = &mut T>"
   # Iterator
   - - type: "Iterator<Item = T>"
-      kind: trait
-      path: "std::iter::Iterator"
       groups:
         - name: "Mapping and filtering"
           items:
@@ -207,8 +201,6 @@ main:
             - "successors (Option<T>, (&T) -> Option<T>) -> Iterator<Item = T>"
   # Slice & Vec
   - - type: "&[T]"
-      kind: primitive
-      path: "std::slice"
       groups:
         - name: "Splitting to iterator"
           items:
@@ -294,8 +286,6 @@ main:
             - "get_mut (SliceIndex<[T]>) -> Option<&mut T>"
             - "iter_mut () -> Iterator<Item = &mut T>"
     - type: "&mut Vec<T>"
-      kind: struct
-      path: "std::vec::Vec"
       groups:
         - name: "Adding and removing single item"
           items:
@@ -340,8 +330,6 @@ main:
             - "shrink_to_fit ()"
   # String-related
   - - type: "&[u8]"
-      kind: primitive
-      path: "std::slice"
       groups:
         - name: "ASCII"
           items:
@@ -363,8 +351,6 @@ main:
             - "from_utf8     (&[u8])     -> Result<&str, Utf8Error>"
             - "from_utf8_mut (&mut [u8]) -> Result<&mut str, Utf8Error>"
     - type: "&str"
-      kind: primitive
-      path: "std::str"
       groups:
         - name: "Chars"
           items:
@@ -439,8 +425,6 @@ main:
             - "make_ascii_uppercase ()"
             - "make_ascii_lowercase ()"
     - type: "&mut String"
-      kind: struct
-      path: "std::string::String"
       groups:
         - name: "Inserting and appending string"
           items:
@@ -532,3 +516,4 @@ references:
       - "std::ops::Range"
       - "std::str::Utf8Error"
       - "std::string::String"
+      - "std::vec::Vec"

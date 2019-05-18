@@ -105,6 +105,15 @@ pub enum Token<'a> {
     Where,
 }
 
+impl Token<'_> {
+    pub fn is_whitespace_only(&self) -> bool {
+        match self {
+            Token::Text(text) => text.trim().is_empty(),
+            _ => false,
+        }
+    }
+}
+
 impl<'a> From<Primitive<'a>> for Token<'a> {
     fn from(primitive: Primitive<'a>) -> Self {
         Token::Primitive(primitive)
