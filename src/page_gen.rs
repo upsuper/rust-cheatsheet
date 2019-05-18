@@ -159,7 +159,7 @@ impl<'a> Generator<'a> {
                         Err(_) => unreachable!("failed to parse: {}", constraints),
                     };
                     write!(f, "<h3>")?;
-                    self.generate_tokens(f, &constraints, Flags::LINKIFY)?;
+                    self.generate_tokens(f, &constraints, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
                     write!(f, "</h3>")?;
                 }
                 PartInfo {
