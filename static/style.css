@@ -8,6 +8,7 @@ main {
   position: absolute;
   width: auto;
   display: flex;
+  white-space: pre;
   transform-origin: 0 0;
   transform: scale(0.5);
 }
@@ -34,25 +35,32 @@ ul, li {
 section {
   padding: 2em;
 }
-section > h2:first-child {
+section > hgroup {
+  margin: 20px 0;
+}
+section > hgroup:first-child {
   margin-top: 0;
+}
+section > hgroup > h2,
+section > hgroup > h3 {
+  margin: 0;
+}
+section > hgroup > h3 {
+  font-size: 1.5em;
 }
 main h2 {
   font-size: 2em;
   line-height: normal;
 }
-main h3 {
+main > section > h3 {
   font: inherit;
   margin: 1em 0 0;
 }
-main h3::before {
+main > section > h3::before {
   content: "// ";
 }
 main ul {
   padding-left: 2em;
-}
-main li {
-  white-space: pre;
 }
 main li.item::before {
   content: "=> ";

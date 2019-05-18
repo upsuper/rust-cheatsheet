@@ -28,6 +28,10 @@ impl<'a> ParsedItem<'a> {
     }
 }
 
+pub fn parse_constraints(input: &str) -> Result<TokenStream<'_>, ()> {
+    parse(where_clause(), input).map(Iterator::collect)
+}
+
 pub fn parse_type(input: &str) -> Result<TokenStream<'_>, ()> {
     parse(single_type_like_token(), input).map(|token| match token {
         Token::Type(inner) => inner,
@@ -65,12 +69,15 @@ fn item_after_name<'a>() -> parser_str_to_iter_token!('a) {
         nested_type_like_list(),
         lex(")"),
         optional_tokens(chain2(lex("->"), single_type_like())),
-        optional_tokens(chain2(wrap("where", Token::Where), where_constraints())),
+        optional_tokens(where_clause()),
     )
 }
 
-fn where_constraints<'a>() -> parser_str_to_iter_token!('a) {
-    sep1_by_lex(single_where_constraint, ",")
+fn where_clause<'a>() -> parser_str_to_iter_token!('a) {
+    chain2(
+        wrap("where", Token::Where),
+        sep1_by_lex(single_where_constraint, ","),
+    )
 }
 
 fn single_where_constraint<'a>() -> parser_str_to_iter_token!('a) {

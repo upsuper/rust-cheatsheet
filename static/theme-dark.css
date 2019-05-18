@@ -2,7 +2,7 @@ body, .impls h4, .impls ul {
   color: #ddd;
   background: #353535;
 }
-h3 {
+section > h3 {
   color: #8d8d8b;
 }
 main a, main span { color: rgba(221, 221, 221, var(--opacity)); }

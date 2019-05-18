@@ -97,6 +97,7 @@ where
     }
 
     fn generate_part(&self, writer: &mut W, part: &Part) -> Result {
+        write!(writer, "<hgroup>")?;
         let info = match part {
             Part::Mod(m) => {
                 let path: Vec<_> = m.path.split("::").collect();
@@ -144,6 +145,15 @@ where
                     url,
                     escape(&t.ty)
                 )?;
+                if let Some(constraints) = &t.constraints {
+                    let constraints = match parser::parse_constraints(constraints) {
+                        Ok(tokens) => tokens,
+                        Err(_) => unreachable!("failed to parse: {}", constraints),
+                    };
+                    write!(writer, "<h3>")?;
+                    self.generate_tokens(writer, &constraints, Flags::LINKIFY)?;
+                    write!(writer, "</h3>")?;
+                }
                 PartInfo {
                     base_url: url,
                     groups: &t.groups,
@@ -151,6 +161,7 @@ where
                 }
             }
         };
+        write!(writer, "</hgroup>")?;
         info.groups
             .iter()
             .map(|group| self.generate_group(writer, group, &info))
