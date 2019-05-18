@@ -6,23 +6,40 @@ use crate::token::{Primitive, Range, Token, TokenStream};
 use bitflags::bitflags;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fmt::Write as _;
+use std::fmt::{Display, Formatter, Result, Write as _};
 use std::fs::File;
-use std::io::{self, Write};
-use std::marker::PhantomData;
+use std::io::{self, Write as _};
 use std::path::Path;
 use v_htmlescape::escape;
 
-type Result = io::Result<()>;
-
-pub fn generate_to(path: impl AsRef<Path>, input: &InputData) -> Result {
+pub fn generate_to(path: impl AsRef<Path>, input: &InputData) -> io::Result<()> {
     let mut file = File::create(path)?;
-    Generator::new(&input.base, &input.trait_impls, &input.references)
-        .generate(&mut file, &input.main)
+    let content_writer = PageContentWriter { input };
+    write!(
+        file,
+        include_str!("template.html"),
+        content = content_writer
+    )?;
+    Ok(())
 }
 
-struct Generator<'a, W> {
-    writer_phantom: PhantomData<W>,
+struct PageContentWriter<'a> {
+    input: &'a InputData,
+}
+
+impl Display for PageContentWriter<'_> {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        let InputData {
+            base,
+            trait_impls,
+            references,
+            main,
+        } = self.input;
+        Generator::new(base, trait_impls, references).generate(f, main)
+    }
+}
+
+struct Generator<'a> {
     base: &'a BaseUrlMap,
     trait_impls: Vec<TraitImpl<'a>>,
     references: HashMap<&'a str, Reference<'a>>,
@@ -34,10 +51,7 @@ struct TraitImpl<'a> {
     impls: Vec<TokenStream<'a>>,
 }
 
-impl<'a, W> Generator<'a, W>
-where
-    W: Write,
-{
+impl<'a> Generator<'a> {
     fn new(
         base: &'a BaseUrlMap,
         trait_impls: &'a [TraitImplPattern],
@@ -68,42 +82,39 @@ where
             })
             .collect();
         Generator {
-            writer_phantom: PhantomData,
             base,
             trait_impls,
             references,
         }
     }
 
-    fn generate(&self, writer: &mut W, data: &[Vec<Part>]) -> Result {
-        writer.write_all(include_bytes!("header.html"))?;
-        write!(writer, "<main>")?;
+    fn generate(&self, f: &mut Formatter, data: &[Vec<Part>]) -> Result {
+        write!(f, "<main>")?;
         data.iter()
-            .map(|section| self.generate_section(writer, &section))
+            .map(|section| self.generate_section(f, &section))
             .collect::<Result>()?;
-        write!(writer, "</main>")?;
-        writer.write_all(include_bytes!("footer.html"))?;
+        write!(f, "</main>")?;
         Ok(())
     }
 
-    fn generate_section(&self, writer: &mut W, section: &[Part]) -> Result {
-        write!(writer, "<section>")?;
+    fn generate_section(&self, f: &mut Formatter, section: &[Part]) -> Result {
+        write!(f, "<section>")?;
         section
             .iter()
-            .map(|part| self.generate_part(writer, part))
+            .map(|part| self.generate_part(f, part))
             .collect::<Result>()?;
-        write!(writer, "</section>")?;
+        write!(f, "</section>")?;
         Ok(())
     }
 
-    fn generate_part(&self, writer: &mut W, part: &Part) -> Result {
-        write!(writer, "<hgroup>")?;
+    fn generate_part(&self, f: &mut Formatter, part: &Part) -> Result {
+        write!(f, "<hgroup>")?;
         let info = match part {
             Part::Mod(m) => {
                 let path: Vec<_> = m.path.split("::").collect();
                 let url = build_path_url(self.base, &path);
                 write!(
-                    writer,
+                    f,
                     r#"<h2><a href="{}index.html">{}</a></h2>"#,
                     url,
                     escape(&m.name),
@@ -139,20 +150,15 @@ where
                     Token::Primitive(primitive) => self.get_primitive_url(primitive).into(),
                     _ => unreachable!("unexpected token inside type: {}", first_token),
                 };
-                write!(
-                    writer,
-                    r#"<h2><a href="{}">{}</a></h2>"#,
-                    url,
-                    escape(&t.ty)
-                )?;
+                write!(f, r#"<h2><a href="{}">{}</a></h2>"#, url, escape(&t.ty))?;
                 if let Some(constraints) = &t.constraints {
                     let constraints = match parser::parse_constraints(constraints) {
                         Ok(tokens) => tokens,
                         Err(_) => unreachable!("failed to parse: {}", constraints),
                     };
-                    write!(writer, "<h3>")?;
-                    self.generate_tokens(writer, &constraints, Flags::LINKIFY)?;
-                    write!(writer, "</h3>")?;
+                    write!(f, "<h3>")?;
+                    self.generate_tokens(f, &constraints, Flags::LINKIFY)?;
+                    write!(f, "</h3>")?;
                 }
                 PartInfo {
                     base_url: url,
@@ -161,49 +167,49 @@ where
                 }
             }
         };
-        write!(writer, "</hgroup>")?;
+        write!(f, "</hgroup>")?;
         match part {
             Part::Type(Type {
                 impls: Some(impls), ..
-            }) => self.generate_impls(writer, impls)?,
+            }) => self.generate_impls(f, impls)?,
             _ => {}
         }
         info.groups
             .iter()
-            .map(|group| self.generate_group(writer, group, &info))
+            .map(|group| self.generate_group(f, group, &info))
             .collect::<Result>()
     }
 
-    fn generate_impls(&self, writer: &mut W, impls: &[String]) -> Result {
-        write!(writer, r#"<ul class="type-impls">"#)?;
+    fn generate_impls(&self, f: &mut Formatter, impls: &[String]) -> Result {
+        write!(f, r#"<ul class="type-impls">"#)?;
         for impl_item in impls.iter() {
             let parsed = match parser::parse_impl(impl_item) {
                 Ok(tokens) => tokens,
                 Err(_) => unreachable!("failed to parse impl: {}", impl_item),
             };
-            write!(writer, "<li>impl ")?;
-            self.generate_tokens(writer, &parsed, Flags::LINKIFY)?;
-            write!(writer, "</li>")?;
+            write!(f, "<li>impl ")?;
+            self.generate_tokens(f, &parsed, Flags::LINKIFY)?;
+            write!(f, "</li>")?;
         }
-        write!(writer, "</ul>")?;
+        write!(f, "</ul>")?;
         Ok(())
     }
 
-    fn generate_group(&self, writer: &mut W, group: &Group, part_info: &PartInfo) -> Result {
+    fn generate_group(&self, f: &mut Formatter, group: &Group, part_info: &PartInfo) -> Result {
         if let Some(name) = &group.name {
-            write!(writer, "<h3>{}</h3>", escape(name))?;
+            write!(f, "<h3>{}</h3>", escape(name))?;
         }
-        write!(writer, "<ul>")?;
+        write!(f, "<ul>")?;
         group
             .items
             .iter()
-            .map(|item| self.generate_item(writer, item, part_info))
+            .map(|item| self.generate_item(f, item, part_info))
             .collect::<Result>()?;
-        write!(writer, "</ul>")?;
+        write!(f, "</ul>")?;
         Ok(())
     }
 
-    fn generate_item(&self, writer: &mut W, item: &InputItem, part_info: &PartInfo) -> Result {
+    fn generate_item(&self, f: &mut Formatter, item: &InputItem, part_info: &PartInfo) -> Result {
         let parsed = ParsedItem::parse(item.content())
             .map_err(|_| format!("failed to parse `{}`", item.content()))
             .unwrap();
@@ -214,8 +220,8 @@ where
                 false => "fn",
             },
         };
-        write!(writer, r#"<li class="item item-{}">"#, kind)?;
-        write!(writer, r#"<span class="prefix-fn">fn </span>"#)?;
+        write!(f, r#"<li class="item item-{}">"#, kind)?;
+        write!(f, r#"<span class="prefix-fn">fn </span>"#)?;
         let url = match part_info.fn_type {
             FunctionType::Function => format!("fn.{}.html", parsed.name),
             FunctionType::Method => match item.trait_impl() {
@@ -224,39 +230,39 @@ where
             },
         };
         write!(
-            writer,
+            f,
             r#"<a href="{}{}" class="{}">{}</a>"#,
             part_info.base_url, url, kind, parsed.name
         )?;
-        self.generate_tokens(writer, &parsed.tokens, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
-        write!(writer, "</li>")?;
+        self.generate_tokens(f, &parsed.tokens, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
+        write!(f, "</li>")?;
         Ok(())
     }
 
-    fn generate_tokens(&self, writer: &mut W, tokens: &TokenStream<'_>, flags: Flags) -> Result {
+    fn generate_tokens(&self, f: &mut Formatter, tokens: &TokenStream<'_>, flags: Flags) -> Result {
         tokens
             .0
             .iter()
             .map(|token| match token {
-                Token::Text(text) => write!(writer, "{}", escape(text)),
-                Token::Where => write!(writer, r#"<span class="where">where</span>"#),
-                Token::Identifier(ident) => self.generate_identifier(writer, ident, flags),
-                Token::AssocType(ty) => write!(writer, r#"<span class="assoc-type">{}</span>"#, ty),
-                Token::Primitive(primitive) => self.generate_primitive(writer, primitive, flags),
-                Token::Range(range) => self.generate_range(writer, *range, flags),
-                Token::Type(ty) => self.generate_type(writer, ty, flags),
+                Token::Text(text) => write!(f, "{}", escape(text)),
+                Token::Where => write!(f, r#"<span class="where">where</span>"#),
+                Token::Identifier(ident) => self.generate_identifier(f, ident, flags),
+                Token::AssocType(ty) => write!(f, r#"<span class="assoc-type">{}</span>"#, ty),
+                Token::Primitive(primitive) => self.generate_primitive(f, primitive, flags),
+                Token::Range(range) => self.generate_range(f, *range, flags),
+                Token::Type(ty) => self.generate_type(f, ty, flags),
                 Token::Nested(nested) => {
-                    write!(writer, r#"<span class="nested">"#)?;
-                    self.generate_tokens(writer, nested, flags)?;
-                    write!(writer, "</span>")
+                    write!(f, r#"<span class="nested">"#)?;
+                    self.generate_tokens(f, nested, flags)?;
+                    write!(f, "</span>")
                 }
             })
             .collect()
     }
 
-    fn generate_type(&self, writer: &mut W, tokens: &TokenStream<'_>, flags: Flags) -> Result {
+    fn generate_type(&self, f: &mut Formatter, tokens: &TokenStream<'_>, flags: Flags) -> Result {
         if !flags.contains(Flags::EXPAND_TRAIT) {
-            return self.generate_tokens(writer, tokens, flags);
+            return self.generate_tokens(f, tokens, flags);
         }
         let matched = self.trait_impls.iter().find_map(|trait_impl| {
             match tokens.matches(&trait_impl.pat, trait_impl.generic) {
@@ -266,19 +272,15 @@ where
         });
         let (trait_impl, replacement) = match matched {
             Some(matched) => matched,
-            None => return self.generate_tokens(writer, tokens, flags),
+            None => return self.generate_tokens(f, tokens, flags),
         };
-        write!(writer, r#"<span class="trait-matched">"#)?;
-        self.generate_tokens(
-            writer,
-            tokens,
-            flags & !(Flags::LINKIFY | Flags::EXPAND_TRAIT),
-        )?;
-        write!(writer, r#"<aside class="impls">"#)?;
+        write!(f, r#"<span class="trait-matched">"#)?;
+        self.generate_tokens(f, tokens, flags & !(Flags::LINKIFY | Flags::EXPAND_TRAIT))?;
+        write!(f, r#"<aside class="impls">"#)?;
         let flags = flags & !Flags::EXPAND_TRAIT;
-        write!(writer, "<h4>")?;
-        self.generate_tokens(writer, tokens, flags)?;
-        write!(writer, "</h4><ul>")?;
+        write!(f, "<h4>")?;
+        self.generate_tokens(f, tokens, flags)?;
+        write!(f, "</h4><ul>")?;
         trait_impl
             .impls
             .iter()
@@ -290,49 +292,45 @@ where
                     _ => None,
                 };
                 let ty = replaced.as_ref().unwrap_or(ty);
-                write!(writer, "<li>")?;
-                self.generate_tokens(writer, ty, flags)?;
-                write!(writer, "</li>")?;
+                write!(f, "<li>")?;
+                self.generate_tokens(f, ty, flags)?;
+                write!(f, "</li>")?;
                 Ok(())
             })
             .collect::<Result>()?;
-        write!(writer, "</ul></aside></span>")?;
+        write!(f, "</ul></aside></span>")?;
         Ok(())
     }
 
-    fn generate_identifier(&self, writer: &mut W, ident: &str, flags: Flags) -> Result {
+    fn generate_identifier(&self, f: &mut Formatter, ident: &str, flags: Flags) -> Result {
         match self.references.get(ident) {
             Some(r) => {
                 let kind = r.kind.to_str();
                 if flags.contains(Flags::LINKIFY) {
-                    write!(
-                        writer,
-                        r#"<a href="{}" class="{}">{}</a>"#,
-                        r.url, kind, ident
-                    )
+                    write!(f, r#"<a href="{}" class="{}">{}</a>"#, r.url, kind, ident)
                 } else {
-                    write!(writer, r#"<span class="{}">{}</span>"#, kind, ident)
+                    write!(f, r#"<span class="{}">{}</span>"#, kind, ident)
                 }
             }
-            None => write!(writer, "{}", ident),
+            None => write!(f, "{}", ident),
         }
     }
 
     fn generate_primitive(
         &self,
-        writer: &mut W,
+        f: &mut Formatter,
         primitive: &Primitive<'_>,
         flags: Flags,
     ) -> Result {
         if flags.contains(Flags::LINKIFY) {
             let url = self.get_primitive_url(primitive);
             write!(
-                writer,
+                f,
                 r#"<a href="{}" class="primitive">{}</a>"#,
                 url, primitive,
             )
         } else {
-            write!(writer, r#"<span class="primitive">{}</span>"#, primitive)
+            write!(f, r#"<span class="primitive">{}</span>"#, primitive)
         }
     }
 
@@ -348,7 +346,7 @@ where
         format!("{}primitive.{}.html", std_url, name)
     }
 
-    fn generate_range(&self, writer: &mut W, range: Range, flags: Flags) -> Result {
+    fn generate_range(&self, f: &mut Formatter, range: Range, flags: Flags) -> Result {
         if flags.contains(Flags::LINKIFY) {
             let name = match range {
                 Range::Range => "Range",
@@ -359,14 +357,14 @@ where
                 Range::RangeToInclusive => "RangeToInclusive",
             };
             write!(
-                writer,
+                f,
                 r#"<a href="{}ops/struct.{}.html">{}</a>"#,
                 self.base.get_url_for("std").unwrap(),
                 name,
                 range
             )
         } else {
-            write!(writer, "{}", range)
+            write!(f, "{}", range)
         }
     }
 }
