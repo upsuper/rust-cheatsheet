@@ -64,26 +64,25 @@ macro_rules! parser_str_to {
 }
 
 fn item_after_name<'a>() -> parser_str_to_iter_token!('a) {
-    (
+    chain5(
         lex("("),
         nested_type_like_list(),
         lex(")"),
         optional_tokens(chain2(lex("->"), single_type_like())),
-        optional_tokens(chain4(
-            wrap("where", Token::Where),
-            single_type_like(),
-            lex(":"),
-            sep1_by_lex(single_type_like, "+"),
-        )),
+        optional_tokens(chain2(wrap("where", Token::Where), where_constraints())),
     )
-        .map(|(left, params, right, ret, where_clause)| {
-            iter::empty()
-                .chain(left)
-                .chain(params)
-                .chain(right)
-                .chain(ret)
-                .chain(where_clause)
-        })
+}
+
+fn where_constraints<'a>() -> parser_str_to_iter_token!('a) {
+    sep1_by_lex(single_where_constraint, ",")
+}
+
+fn single_where_constraint<'a>() -> parser_str_to_iter_token!('a) {
+    chain3(
+        single_type_like(),
+        lex(":"),
+        sep1_by_lex(single_type_like, "+"),
+    )
 }
 
 type BoxedTokenIter<'a> = Box<dyn Iterator<Item = Token<'a>> + 'a>;
@@ -382,6 +381,7 @@ macro_rules! impl_chain {
 impl_chain!(chain2: a b);
 impl_chain!(chain3: a b c);
 impl_chain!(chain4: a b c d);
+impl_chain!(chain5: a b c d e);
 
 #[cfg(test)]
 mod tests {
@@ -407,6 +407,10 @@ mod tests {
         " ((&T) -> bool) -> (B, B) where B: Default + Extend<T>" => [
             " (" { ^["(" { ^[&"" ^T] } ") -> " @bool] } ") " "-> " @( ^B ", " ^B )
             " " where " " ^B ": " ^Default " + " ^[ Extend "<" ^T ">" ]
+        ],
+        " (S, T) -> S where S: Default + Clone, Tz::Offset: Display" => [
+            " (" { ^S ", " ^T } ") " "-> " ^S " " where " "
+            ^S ": " ^Default " + " ^Clone ", " ^[ ^Tz "::" +Offset ] ": " ^Display
         ],
     ]);
 
