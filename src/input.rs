@@ -8,6 +8,7 @@ const DEFAULT_STD_URL: &str = "https://doc.rust-lang.org/std/";
 
 #[derive(Debug, Deserialize)]
 pub struct InputData {
+    pub title: String,
     #[serde(default)]
     pub base: BaseUrlMap,
     pub main: Vec<Vec<Part>>,

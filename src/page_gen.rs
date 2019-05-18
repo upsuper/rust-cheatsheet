@@ -18,6 +18,7 @@ pub fn generate_to(path: impl AsRef<Path>, input: &InputData) -> io::Result<()> 
     write!(
         file,
         include_str!("template.html"),
+        title = escape(&input.title),
         content = content_writer
     )?;
     Ok(())
@@ -34,6 +35,7 @@ impl Display for PageContentWriter<'_> {
             trait_impls,
             references,
             main,
+            ..
         } = self.input;
         Generator::new(base, trait_impls, references).generate(f, main)
     }
