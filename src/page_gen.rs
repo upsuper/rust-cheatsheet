@@ -177,11 +177,11 @@ impl<'a> Generator<'a> {
             }
         };
         write!(f, "</hgroup>")?;
-        match part {
-            Part::Type(Type {
-                impls: Some(impls), ..
-            }) => self.generate_impls(f, impls)?,
-            _ => {}
+        if let Part::Type(Type {
+            impls: Some(impls), ..
+        }) = part
+        {
+            self.generate_impls(f, impls)?;
         }
         info.groups
             .iter()
@@ -224,10 +224,13 @@ impl<'a> Generator<'a> {
             .unwrap();
         let kind = match part_info.fn_type {
             FunctionType::Function => "fn",
-            FunctionType::Method => match parsed.takes_self {
-                true => "method",
-                false => "fn",
-            },
+            FunctionType::Method => {
+                if parsed.takes_self {
+                    "method"
+                } else {
+                    "fn"
+                }
+            }
         };
         write!(f, r#"<li class="item item-{}">"#, kind)?;
         write!(f, r#"<span class="prefix-fn">fn </span>"#)?;
