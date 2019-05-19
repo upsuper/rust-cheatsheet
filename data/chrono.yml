@@ -40,14 +40,14 @@ main:
             - "time () -> NaiveTime"
         - name: "Timestamp"
           items:
-            - "timestamp () -> i64"
+            - "timestamp        () -> i64"
             - "timestamp_millis () -> i64"
-            - "timestamp_nanos () -> i64"
+            - "timestamp_nanos  () -> i64"
         - name: "Timestamp sub-second part"
           items:
             - "timestamp_subsec_millis () -> u32"
             - "timestamp_subsec_micros () -> u32"
-            - "timestamp_subsec_nanos () -> u32"
+            - "timestamp_subsec_nanos  () -> u32"
         - name: "Timezone"
           items:
             - "offset () -> &Tz::Offset"
