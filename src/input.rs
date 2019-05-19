@@ -128,4 +128,6 @@ pub struct TraitImplPattern {
 pub struct References {
     pub kind: Kind,
     pub names: Vec<String>,
+    #[serde(default)]
+    pub aliases: HashMap<String, String>,
 }

@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter, Result, Write as _};
 use std::fs::File;
 use std::io::{self, Write as _};
+use std::iter;
 use std::path::Path;
 use v_htmlescape::escape;
 
@@ -76,11 +77,17 @@ impl<'a> Generator<'a> {
             .iter()
             .flat_map(|reference| {
                 let kind = reference.kind;
-                reference.names.iter().map(move |item| {
-                    let (path, name) = parse_path(&item);
-                    let url = build_type_url(base, &path, kind, name);
-                    (name, Reference { kind, path, url })
-                })
+                iter::empty()
+                    .chain(reference.names.iter().map(move |item| {
+                        let (path, name) = parse_path(&item);
+                        let url = build_type_url(base, &path, kind, name);
+                        (name, Reference { kind, path, url })
+                    }))
+                    .chain(reference.aliases.iter().map(move |(alias, path)| {
+                        let (path, name) = parse_path(&path);
+                        let url = build_type_url(base, &path, kind, name);
+                        (alias.as_str(), Reference { kind, path, url })
+                    }))
             })
             .collect();
         Generator {
