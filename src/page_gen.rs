@@ -1,10 +1,9 @@
 use crate::input::{
-    BaseUrlMap, Group, InputData, InputItem, Kind, Part, References, TraitImplPattern, Type,
+    BaseUrlMap, Group, InputData, InputItem, Kind, Mod, Part, References, TraitImplPattern, Type,
 };
 use crate::parser::{self, ParsedItem};
 use crate::token::{Primitive, Range, Token, TokenStream};
 use bitflags::bitflags;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter, Result, Write as _};
 use std::fs::File;
@@ -117,81 +116,89 @@ impl<'a> Generator<'a> {
     }
 
     fn generate_part(&self, f: &mut Formatter, part: &Part) -> Result {
+        let info = self.build_part_info(part);
         write!(f, r#"<hgroup class="part-title-group">"#)?;
-        let info = match part {
-            Part::Mod(m) => {
-                let path: Vec<_> = m.path.split("::").collect();
-                let url = build_path_url(self.base, &path);
-                write!(
-                    f,
-                    r#"<h2 class="part-title"><a href="{}index.html">{}</a></h2>"#,
-                    url,
-                    escape(&m.name),
-                )?;
-                PartInfo {
-                    base_url: url.into(),
-                    groups: &m.groups,
-                    fn_type: FunctionType::Function,
-                }
-            }
-            Part::Type(t) => {
-                let ty = parse_type(&t.ty);
-                // Unwrap references
-                let mut inner = &ty;
-                loop {
-                    let mut iter = inner.0.iter().filter(|token| !token.is_whitespace_only());
-                    let next_token = match iter.next() {
-                        Some(Token::Primitive(Primitive::Ref(_))) => iter.next(),
-                        _ => break,
-                    };
-                    inner = match next_token {
-                        Some(Token::Type(inner)) => inner,
-                        _ => unreachable!("unexpected token after ref: {:?}", next_token),
-                    };
-                }
-                // Use the first token as the source of base url for this part
-                let first_token = inner.0.first().expect("empty inner");
-                let url = match first_token {
-                    Token::Identifier(ident) => match self.references.get(ident) {
-                        Some(r) => Cow::from(&r.url),
-                        None => unreachable!("unknown name: {}", ident),
-                    },
-                    Token::Primitive(primitive) => self.get_primitive_url(primitive).into(),
-                    _ => unreachable!("unexpected token inside type: {}", first_token),
-                };
-                write!(
-                    f,
-                    r#"<h2 class="part-title"><a href="{}">{}</a></h2>"#,
-                    url,
-                    escape(&t.ty)
-                )?;
-                if let Some(constraints) = &t.constraints {
-                    let constraints = match parser::parse_constraints(constraints) {
-                        Ok(tokens) => tokens,
-                        Err(_) => unreachable!("failed to parse: {}", constraints),
-                    };
-                    write!(f, r#"<h3 class="part-subtitle">"#)?;
-                    self.generate_tokens(f, &constraints, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
-                    write!(f, "</h3>")?;
-                }
-                PartInfo {
-                    base_url: url,
-                    groups: &t.groups,
-                    fn_type: FunctionType::Method,
-                }
-            }
-        };
+        write!(
+            f,
+            r#"<h2 class="part-title"><a href="{}">{}</a></h2>"#,
+            info.base_url,
+            escape(info.title)
+        )?;
+        if let Some(constraints) = &info.constraints {
+            write!(f, r#"<h3 class="part-subtitle">"#)?;
+            self.generate_tokens(f, constraints, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
+            write!(f, "</h3>")?;
+        }
         write!(f, "</hgroup>")?;
-        if let Part::Type(Type {
-            impls: Some(impls), ..
-        }) = part
-        {
-            self.generate_impls(f, impls)?;
+        if let Part::Type(ty) = part {
+            if let Some(impls) = &ty.impls {
+                self.generate_impls(f, impls)?;
+            }
         }
         info.groups
             .iter()
             .map(|group| self.generate_group(f, group, &info))
             .collect::<Result>()
+    }
+
+    fn build_part_info(&self, part: &'a Part) -> PartInfo<'a> {
+        match part {
+            Part::Mod(m) => self.build_part_info_for_mod(m),
+            Part::Type(t) => self.build_part_info_for_type(t),
+        }
+    }
+
+    fn build_part_info_for_mod(&self, m: &'a Mod) -> PartInfo<'a> {
+        let path: Vec<_> = m.path.split("::").collect();
+        let url = build_path_url(self.base, &path);
+        PartInfo {
+            title: &m.name,
+            base_url: url.into(),
+            constraints: None,
+            groups: &m.groups,
+            fn_type: FunctionType::Function,
+        }
+    }
+
+    fn build_part_info_for_type(&self, t: &'a Type) -> PartInfo<'a> {
+        let ty = parse_type(&t.ty);
+        // Unwrap references
+        let mut inner = &ty;
+        loop {
+            let mut iter = inner.0.iter().filter(|token| !token.is_whitespace_only());
+            let next_token = match iter.next() {
+                Some(Token::Primitive(Primitive::Ref(_))) => iter.next(),
+                _ => break,
+            };
+            inner = match next_token {
+                Some(Token::Type(inner)) => inner,
+                _ => unreachable!("unexpected token after ref: {:?}", next_token),
+            };
+        }
+        // Use the first token as the source of base url for this part
+        let first_token = inner.0.first().expect("empty inner");
+        let url = match first_token {
+            Token::Identifier(ident) => match self.references.get(ident) {
+                Some(r) => r.url.clone(),
+                None => unreachable!("unknown name: {}", ident),
+            },
+            Token::Primitive(primitive) => self.get_primitive_url(primitive),
+            _ => unreachable!("unexpected token inside type: {}", first_token),
+        };
+        let constraints =
+            t.constraints.as_ref().map(|constraints| {
+                match parser::parse_constraints(constraints.as_str()) {
+                    Ok(tokens) => tokens,
+                    Err(_) => unreachable!("failed to parse: {}", constraints),
+                }
+            });
+        PartInfo {
+            title: &t.ty,
+            base_url: url,
+            constraints,
+            groups: &t.groups,
+            fn_type: FunctionType::Method,
+        }
     }
 
     fn generate_impls(&self, f: &mut Formatter, impls: &[String]) -> Result {
@@ -440,7 +447,9 @@ struct Reference<'a> {
 }
 
 struct PartInfo<'a> {
-    base_url: Cow<'a, str>,
+    title: &'a str,
+    base_url: String,
+    constraints: Option<TokenStream<'a>>,
     groups: &'a [Group],
     fn_type: FunctionType,
 }
