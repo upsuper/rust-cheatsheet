@@ -1,0 +1,404 @@
+title: Chrono
+
+base:
+  chrono: "https://docs.rs/chrono/0.4.6/chrono/"
+  time: "https://docs.rs/time/0.1.42/time/"
+
+main:
+  # DateTime & NaiveDateTime
+  - - type: "DateTime<Tz>"
+      constraints: "where Tz: TimeZone"
+      impls:
+        - "Datelike"
+        - "Timelike"
+        - "Sub<Self> => Output = Duration"
+        - "Add<Duration> => Output = Self"
+        - "Sub<Duration> => Output = Self"
+        - "Add<FixedOffset> => Output = Self"
+        - "Sub<FixedOffset> => Output = Self"
+      groups:
+        - items:
+            - "::from_utc (NaiveDateTime, Tz::Offset) -> Self"
+        - name: "Checked calculation"
+          items:
+            - "checked_add_signed (Duration) -> Option<Self>"
+            - "checked_sub_signed (Duration) -> Option<Self>"
+            - "signed_duration_since (DateTime<Tz2>) -> Duration"
+    - type: "DateTime<FixedOffset>"
+      groups:
+        - name: "Parse"
+          items:
+            - "::parse_from_rfc2822 (&str) -> ParseResult<Self>"
+            - "::parse_from_rfc3339 (&str) -> ParseResult<Self>"
+            - "::parse_from_str (&str, &str) -> ParseResult<Self>"
+    - type: "&DateTime<Tz>"
+      constraints: "where Tz: TimeZone"
+      groups:
+        - name: "Data & time"
+          items:
+            - "date () -> Date<Tz>"
+            - "time () -> NaiveTime"
+        - name: "Timestamp"
+          items:
+            - "timestamp () -> i64"
+            - "timestamp_millis () -> i64"
+            - "timestamp_nanos () -> i64"
+        - name: "Timestamp sub-second part"
+          items:
+            - "timestamp_subsec_millis () -> u32"
+            - "timestamp_subsec_micros () -> u32"
+            - "timestamp_subsec_nanos () -> u32"
+        - name: "Timezone"
+          items:
+            - "offset () -> &Tz::Offset"
+            - "timezone () -> Tz"
+            - "with_timezone (&Tz2) -> DateTime<Tz2>"
+        - name: "To NaiveDateTime"
+          items:
+            - "naive_utc () -> NaiveDateTime"
+            - "naive_local () -> NaiveDateTime"
+    - type: "&DateTime<Tz>"
+      constraints: |-
+        where Tz: TimeZone,
+              Tz::Offset: Display
+      groups:
+        - items:
+            - "format (&str) -> Display"
+            - "to_rfc2822 () -> String"
+            - "to_rfc3339 () -> String"
+            - "to_rfc3339_opts (SecondsFormat, bool) -> String"
+    - type: "NaiveDateTime"
+      impls:
+        - "Datelike"
+        - "Timelike"
+        - "AddAssign<Duration>"
+        - "SubAssign<Duration>"
+        - "Add<Duration> => Output = Self"
+        - "Sub<Duration> => Output = Self"
+        - "Add<FixedOffset> => Output = Self"
+        - "Sub<FixedOffset> => Output = Self"
+      groups:
+        - name: "Construct"
+          items:
+            - "::new    (NaiveDate, NaiveTime) -> Self"
+            - "::from_timestamp     (i64, u32) -> Self"
+            - "::from_timestamp_opt (i64, u32) -> Self"
+            - "::parse_from_str (&str, &str) -> ParseResult<Self>"
+        - name: "Checked calculation"
+          items:
+            - "checked_add_signed (Duration) -> Option<Self>"
+            - "checked_sub_signed (Duration) -> Option<Self>"
+            - "signed_duration_since (NaiveDateTime) -> Duration"
+    - type: "&NaiveDateTime"
+      groups:
+        - name: "Date & time"
+          items:
+            - "date () -> NaiveDate"
+            - "time () -> NaiveTime"
+        - name: "Timestamp"
+          items:
+            - "timestamp        () -> i64"
+            - "timestamp_millis () -> i64"
+            - "timestamp_nanos  () -> i64"
+        - name: "Timestamp sub-second part"
+          items:
+            - "timestamp_subsec_millis () -> u32"
+            - "timestamp_subsec_micros () -> u32"
+            - "timestamp_subsec_nanos  () -> u32"
+        - name: "Format"
+          items:
+            - "format (&str) -> Display"
+  # Date & NaiveDate
+  - - type: "Date<Tz>"
+      constraints: "where Tz: TimeZone"
+      impls:
+        - "Datelike"
+        - "Sub<Self> => Output = Duration"
+        - "Add<Duration> => Output = Self"
+        - "Sub<Duration> => Output = Self"
+      groups:
+        - items:
+            - "::from_utc (NaiveDate, Tz::Offset) -> Self"
+        - name: "Checked calculation"
+          items:
+            - "checked_add_signed (Duration) -> Option<Self>"
+            - "checked_sub_signed (Duration) -> Option<Self>"
+            - "signed_duration_since (Date<Tz2>) -> Duration"
+    - type: "&Date<Tz>"
+      constraints: "where Tz: TimeZone"
+      groups:
+        - name: "To DateTime (panic when invalid)"
+          items:
+            - "and_hms       (u32, u32, u32)      -> DateTime<Tz>"
+            - "and_hms_milli (u32, u32, u32, u32) -> DateTime<Tz>"
+            - "and_hms_micro (u32, u32, u32, u32) -> DateTime<Tz>"
+            - "and_hms_nano  (u32, u32, u32, u32) -> DateTime<Tz>"
+        - name: "To DateTime (None when invalid)"
+          items:
+            - "and_time          (NaiveTime)          -> Option<DateTime<Tz>>"
+            - "and_hms_opt       (u32, u32, u32)      -> Option<DateTime<Tz>>"
+            - "and_hms_milli_opt (u32, u32, u32, u32) -> Option<DateTime<Tz>>"
+            - "and_hms_micro_opt (u32, u32, u32, u32) -> Option<DateTime<Tz>>"
+            - "and_hms_nano_opt  (u32, u32, u32, u32) -> Option<DateTime<Tz>>"
+        - name: "Next / previous date"
+          items:
+            - "succ () -> Self"
+            - "pred () -> Self"
+            - "succ_opt () -> Option<Self>"
+            - "pred_opt () -> Option<Self>"
+        - name: "Timezone"
+          items:
+            - "offset () -> &Tz::Offset"
+            - "timezone () -> Tz"
+            - "with_timezone (&Tz2) -> Date<Tz2>"
+        - name: "To NaiveDate"
+          items:
+            - "naive_utc   () -> NaiveDate"
+            - "naive_local () -> NaiveDate"
+        - name: "Format"
+          items:
+            - "format (&str) -> Display where Tz::Offset: Display"
+    - type: "NaiveDate"
+      impls:
+        - "Datelike"
+        - "AddAssign<Duration>"
+        - "SubAssign<Duration>"
+        - "Sub<Self> => Output = Duration"
+        - "Add<Duration> => Output = Self"
+        - "Sub<Duration> => Output = Self"
+      groups:
+        - name: "Construct (panic when invalid)"
+          items:
+            - "::from_ymd    (i32, u32, u32)     -> Self"
+            - "::from_yo     (i32, u32)          -> Self"
+            - "::from_isoywd (i32, u32, Weekday) -> Self"
+            - "::from_num_days_from_ce (i32)     -> Self"
+        - name: "Construct (None when invalid)"
+          items:
+            - "::from_ymd_opt    (i32, u32, u32)     -> Option<Self>"
+            - "::from_yo_opt     (i32, u32)          -> Option<Self>"
+            - "::from_isoywd_opt (i32, u32, Weekday) -> Option<Self>"
+            - "::from_num_days_from_ce_opt (i32)     -> Option<Self>"
+        - name: "Parse"
+          items:
+            - "::parse_from_str (&str, &str) -> ParseResult<Self>"
+        - name: "Checked calculation"
+          items:
+            - "checked_add_signed (Duration) -> Option<Self>"
+            - "checked_sub_signed (Duration) -> Option<Self>"
+            - "signed_duration_since (Self) -> Duration"
+    - type: "&NaiveDate"
+      groups:
+        - name: "To NaiveDateTime"
+          items:
+            - "and_time (NaiveTime) -> NaiveDateTime"
+        - name: "To NaiveDateTime (panic when invalid)"
+          items:
+            - "and_hms       (u32, u32, u32)      -> NaiveDateTime"
+            - "and_hms_milli (u32, u32, u32, u32) -> NaiveDateTime"
+            - "and_hms_micro (u32, u32, u32, u32) -> NaiveDateTime"
+            - "and_hms_nano  (u32, u32, u32, u32) -> NaiveDateTime"
+        - name: "To NaiveDateTime (Option when invalid)"
+          items:
+            - "and_hms_opt       (u32, u32, u32)      -> Option<NaiveDateTime>"
+            - "and_hms_milli_opt (u32, u32, u32, u32) -> Option<NaiveDateTime>"
+            - "and_hms_micro_opt (u32, u32, u32, u32) -> Option<NaiveDateTime>"
+            - "and_hms_nano_opt  (u32, u32, u32, u32) -> Option<NaiveDateTime>"
+        - name: "Next / previous date"
+          items:
+            - "succ () -> Self"
+            - "pred () -> Self"
+            - "succ_opt () -> Option<Self>"
+            - "pred_opt () -> Option<Self>"
+        - name: "Format"
+          items:
+            - "format (&str) -> Display"
+  # NaiveTime & Duration
+  - - type: "NaiveTime"
+      impls:
+        - "Timelike"
+        - "AddAssign<Duration>"
+        - "SubAssign<Duration>"
+        - "Sub<Self> => Output = Duration"
+        - "Add<Duration> => Output = Self"
+        - "Sub<Duration> => Output = Self"
+        - "Add<FixedOffset> => Output = Self"
+        - "Sub<FixedOffset> => Output = Self"
+      groups:
+        - name: "Construct (panic when invalid)"
+          items:
+            - "::from_hms       (u32, u32, u32)      -> Self"
+            - "::from_hms_milli (u32, u32, u32, u32) -> Self"
+            - "::from_hms_micro (u32, u32, u32, u32) -> Self"
+            - "::from_hms_nano  (u32, u32, u32, u32) -> Self"
+            - "::from_num_seconds_from_midnight (u32, u32) -> Self"
+        - name: "Construct (None when invalid)"
+          items:
+            - "::from_hms_opt       (u32, u32, u32)      -> Option<Self>"
+            - "::from_hms_milli_opt (u32, u32, u32, u32) -> Option<Self>"
+            - "::from_hms_micro_opt (u32, u32, u32, u32) -> Option<Self>"
+            - "::from_hms_nano_opt  (u32, u32, u32, u32) -> Option<Self>"
+            - "::from_num_seconds_from_midnight_opt (u32, u32) -> Option<Self>"
+        - name: "Parse"
+          items:
+            - "::parse_from_str (&str, &str) -> ParseResult<Self>"
+        - name: "Calculation"
+          items:
+            - "signed_duration_since (Self) -> Duration"
+    - type: "&NaiveTime"
+      groups:
+        - name: "Overflowing calculation"
+          items:
+            - "overflowing_add_signed (Duration) -> (Self, i64)"
+            - "overflowing_sub_signed (Duration) -> (Self, i64)"
+        - name: "Format"
+          items:
+            - "format (&str) -> Display"
+    - type: "Duration"
+      impls:
+        - "Neg       => Output = Self"
+        - "Mul<i32>  => Output = Self"
+        - "Div<i32>  => Output = Self"
+        - "Add<Self> => Output = Self"
+        - "Sub<Self> => Output = Self"
+      groups:
+        - name: "Construct from numbers"
+          items:
+            - "::weeks   (i64) -> Self"
+            - "::days    (i64) -> Self"
+            - "::hours   (i64) -> Self"
+            - "::minutes (i64) -> Self"
+            - "::seconds (i64) -> Self"
+            - "::milliseconds (i64) -> Self"
+            - "::microseconds (i64) -> Self"
+            - "::nanoseconds  (i64) -> Self"
+        - name: "Measure duration"
+          items:
+            - "::span (() -> ()) -> Self"
+        - name: "Special values"
+          items:
+            - "::zero () -> Self"
+            - "::min_value () -> Self"
+            - "::max_value () -> Self"
+        - name: "From Duration in std"
+          items:
+            - "::from_std (StdDuration) -> Result<Self, OutOfRangeError>"
+    - type: "&Duration"
+      groups:
+        - name: "Numbers"
+          items:
+            - "num_weeks   () -> i64"
+            - "num_days    () -> i64"
+            - "num_hours   () -> i64"
+            - "num_minutes () -> i64"
+            - "num_seconds () -> i64"
+            - "num_milliseconds () -> i64"
+            - "num_microseconds () -> Option<i64>"
+            - "num_nanoseconds  () -> Option<i64>"
+        - name: "Checked calculation"
+          items:
+            - "checked_add (&Self) -> Option<Self>"
+            - "checked_sub (&Self) -> Option<Self>"
+        - items:
+            - "is_zero () -> bool"
+            - "to_std () -> Result<StdDuration, OutOfRangeError>"
+  # Datelike & Timelike
+  - - type: "&Datelike"
+      groups:
+        - name: "Date numbers"
+          items:
+            - "year     () -> i32"
+            - "month    () -> u32"
+            - "day      () -> u32"
+            - "ordinal  () -> u32"
+        - name: "Date numbers (zero-based)"
+          items:
+            - "month0   () -> u32"
+            - "day0     () -> u32"
+            - "ordinal0 () -> u32"
+        - name: "Week"
+          items:
+            - "weekday  () -> Weekday"
+            - "iso_week () -> IsoWeek"
+        - name: "Construct with different date number"
+          items:
+            - "with_year    (i32) -> Option<Self>"
+            - "with_month   (u32) -> Option<Self>"
+            - "with_day     (u32) -> Option<Self>"
+            - "with_ordinal (u32) -> Option<Self>"
+        - name: "Construct with different date number (zero-based)"
+          items:
+            - "with_month0   (u32) -> Option<Self>"
+            - "with_day0     (u32) -> Option<Self>"
+            - "with_ordinal0 (u32) -> Option<Self>"
+        - name: "Common era"
+          items:
+            - "year_ce () -> (bool, u32)"
+            - "num_days_from_ce () -> i32"
+    - type: "&Timelike"
+      groups:
+        - name: "Time numbers"
+          items:
+            - "hour       () -> u32"
+            - "minute     () -> u32"
+            - "second     () -> u32"
+            - "nanosecond () -> u32"
+        - name: "Construct with different numbers"
+          items:
+            - "with_hour       (u32) -> Option<Self>"
+            - "with_minute     (u32) -> Option<Self>"
+            - "with_second     (u32) -> Option<Self>"
+            - "with_nanosecond (u32) -> Option<Self>"
+        - items:
+            - "hour12 () -> (bool, u32)"
+            - "num_seconds_from_midnight () -> u32"
+
+trait_impls:
+  - pat: "TimeZone"
+    impls:
+      - "Utc"
+      - "Local"
+      - "FixedOffset"
+
+references:
+  - kind: enum
+    names:
+      - "chrono::Weekday"
+      - "chrono::SecondsFormat"
+      - "chrono::format::Item"
+      - "std::option::Option"
+      - "std::result::Result"
+  - kind: struct
+    names:
+      - "chrono::Date"
+      - "chrono::DateTime"
+      - "chrono::Duration"
+      - "chrono::naive::IsoWeek"
+      - "chrono::naive::NaiveDate"
+      - "chrono::naive::NaiveDateTime"
+      - "chrono::naive::NaiveTime"
+      - "chrono::offset::FixedOffset"
+      - "chrono::offset::Local"
+      - "chrono::offset::Utc"
+      - "std::string::String"
+      - "time::OutOfRangeError"
+    aliases:
+      StdDuration: "std::time::Duration"
+  - kind: trait
+    names:
+      - "chrono::Datelike"
+      - "chrono::Timelike"
+      - "chrono::offset::TimeZone"
+      - "std::clone::Clone"
+      - "std::fmt::Display"
+      - "std::iter::Iterator"
+      - "std::ops::Add"
+      - "std::ops::AddAssign"
+      - "std::ops::Div"
+      - "std::ops::Mul"
+      - "std::ops::Neg"
+      - "std::ops::Sub"
+      - "std::ops::SubAssign"
+  - kind: type
+    names:
+      - "chrono::format::ParseResult"
