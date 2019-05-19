@@ -2,7 +2,7 @@ body, .impls h4, .impls ul {
   color: black;
   background: white;
 }
-section > h3 {
+.group-title {
   color: #8e908c;
 }
 main a, main span { color: rgba(0, 0, 0, var(--opacity)); }

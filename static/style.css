@@ -33,13 +33,10 @@ ul, li {
   margin: 0;
 }
 .section {
-  padding: 2em;
+  padding: 0 2em;
 }
 .part-title-group {
-  margin: 20px 0;
-}
-.part-title-group:first-child {
-  margin-top: 0;
+  margin: 1.5em 0 1em;
 }
 .part-title {
   font-size: 2em;
@@ -58,9 +55,11 @@ ul, li {
 .group-title::before {
   content: "// ";
 }
+.group-list, .type-impls {
+  margin-bottom: 1em;
+}
 .group-list {
   padding-left: 2em;
-  margin-bottom: 1em;
 }
 .item::before {
   content: "=> ";
@@ -69,11 +68,8 @@ ul, li {
 .item-fn::before {
   content: ":: ";
 }
-.item a {
+.type-impls a, .group-list a {
   font-weight: 500;
-}
-.type-impls {
-  padding-left: 0;
 }
 .prefix-fn {
   margin-left: -1.8em;
