@@ -107,7 +107,7 @@ impl<'a> Generator<'a> {
     }
 
     fn generate_section(&self, f: &mut Formatter, section: &[Part]) -> Result {
-        write!(f, "<section>")?;
+        write!(f, r#"<section class="section">"#)?;
         section
             .iter()
             .map(|part| self.generate_part(f, part))
@@ -117,14 +117,14 @@ impl<'a> Generator<'a> {
     }
 
     fn generate_part(&self, f: &mut Formatter, part: &Part) -> Result {
-        write!(f, "<hgroup>")?;
+        write!(f, r#"<hgroup class="part-title-group">"#)?;
         let info = match part {
             Part::Mod(m) => {
                 let path: Vec<_> = m.path.split("::").collect();
                 let url = build_path_url(self.base, &path);
                 write!(
                     f,
-                    r#"<h2><a href="{}index.html">{}</a></h2>"#,
+                    r#"<h2 class="part-title"><a href="{}index.html">{}</a></h2>"#,
                     url,
                     escape(&m.name),
                 )?;
@@ -159,13 +159,18 @@ impl<'a> Generator<'a> {
                     Token::Primitive(primitive) => self.get_primitive_url(primitive).into(),
                     _ => unreachable!("unexpected token inside type: {}", first_token),
                 };
-                write!(f, r#"<h2><a href="{}">{}</a></h2>"#, url, escape(&t.ty))?;
+                write!(
+                    f,
+                    r#"<h2 class="part-title"><a href="{}">{}</a></h2>"#,
+                    url,
+                    escape(&t.ty)
+                )?;
                 if let Some(constraints) = &t.constraints {
                     let constraints = match parser::parse_constraints(constraints) {
                         Ok(tokens) => tokens,
                         Err(_) => unreachable!("failed to parse: {}", constraints),
                     };
-                    write!(f, "<h3>")?;
+                    write!(f, r#"<h3 class="part-subtitle">"#)?;
                     self.generate_tokens(f, &constraints, Flags::LINKIFY | Flags::EXPAND_TRAIT)?;
                     write!(f, "</h3>")?;
                 }
@@ -206,9 +211,9 @@ impl<'a> Generator<'a> {
 
     fn generate_group(&self, f: &mut Formatter, group: &Group, part_info: &PartInfo) -> Result {
         if let Some(name) = &group.name {
-            write!(f, "<h3>{}</h3>", escape(name))?;
+            write!(f, r#"<h3 class="group-title">{}</h3>"#, escape(name))?;
         }
-        write!(f, "<ul>")?;
+        write!(f, r#"<ul class="group-list">"#)?;
         group
             .items
             .iter()
@@ -290,9 +295,9 @@ impl<'a> Generator<'a> {
         self.generate_tokens(f, tokens, flags & !(Flags::LINKIFY | Flags::EXPAND_TRAIT))?;
         write!(f, r#"<aside class="impls">"#)?;
         let flags = flags & !Flags::EXPAND_TRAIT;
-        write!(f, "<h4>")?;
+        write!(f, r#"<h4 class="impls-title">"#)?;
         self.generate_tokens(f, tokens, flags)?;
-        write!(f, "</h4><ul>")?;
+        write!(f, r#"</h4><ul class="impls-list">"#)?;
         trait_impl
             .impls
             .iter()
