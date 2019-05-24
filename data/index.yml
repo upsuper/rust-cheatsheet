@@ -32,6 +32,7 @@ main:
         - name: "Cloning inner"
           items:
             - "cloned () -> Option<T> where T: Clone"
+            - "copied () -> Option<T> where T: Copy"
     - type: "Option<Result<T, E>>"
       groups:
         - name: "Transposing"
