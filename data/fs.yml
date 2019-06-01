@@ -1,0 +1,222 @@
+title: Filesystem
+
+base:
+  fs2: "https://docs.rs/fs2/0.4.3/fs2/"
+
+main:
+  # fs & fs2
+  - - mod: "fs"
+      path: "std::fs"
+      groups:
+        - name: "Read & write"
+          items:
+            - "read (AsRef<Path>) -> Result<Vec<u8>>"
+            - "read_to_string (AsRef<Path>) -> Result<String>"
+            - "write (AsRef<Path>, &str) -> Result<()>"
+        - name: "Directory"
+          items:
+            - "read_dir (AsRef<Path>) -> Result<Iterator<Item = Result<DirEntry>>>"
+            - "create_dir     (AsRef<Path>) -> Result<()>"
+            - "create_dir_all (AsRef<Path>) -> Result<()>"
+            - "remove_dir     (AsRef<Path>) -> Result<()>"
+            - "remove_dir_all (AsRef<Path>) -> Result<()>"
+        - name: "File operation"
+          items:
+            - "copy   (AsRef<Path>, AsRef<Path>) -> Result<u64>"
+            - "rename (AsRef<Path>, AsRef<Path>) -> Result<()>"
+            - "remove_file (AsRef<Path>) -> Result<()>"
+        - name: "Metadata"
+          items:
+            - "metadata         (AsRef<Path>) -> Result<Metadata>"
+            - "symlink_metadata (AsRef<Path>) -> Result<Metadata>"
+            - "set_permissions  (AsRef<Path>, Permissions) -> Result<()>"
+        - name: "Link"
+          items:
+            - "canonicalize (AsRef<Path>) -> Result<PathBuf>"
+            - "hard_link (AsRef<Path>, AsRef<Path>) -> Result<()>"
+            - "read_link (AsRef<Path>) -> Result<PathBuf>"
+    - mod: "fs2"
+      path: "fs2"
+      groups:
+        - name: "Filesystem info"
+          items:
+            - "available_space (AsRef<Path>) -> Result<u64>"
+            - "free_space      (AsRef<Path>) -> Result<u64>"
+            - "total_space     (AsRef<Path>) -> Result<u64>"
+            - "allocation_granularity (AsRef<Path>) -> Result<u64>"
+            - "statvfs (AsRef<Path>) -> Result<FsStats>"
+  # Path
+  - - type: "&Path"
+      groups:
+        - name: "Type conversion and display"
+          items:
+            - "as_os_str   () -> &OsStr"
+            - "to_path_buf () -> PathBuf"
+            - "to_str      () -> Option<&str>"
+            - "to_string_lossy () -> Cow<str>"
+            - "display () -> Display"
+        - name: "Path type"
+          items:
+            - "has_root    () -> bool"
+            - "is_absolute () -> bool"
+            - "is_relative () -> bool"
+        - name: "Filename in path"
+          items:
+            - "file_name () -> Option<&OsStr>"
+            - "file_stem () -> Option<&OsStr>"
+            - "extension () -> Option<&OsStr>"
+        - name: "Components of path"
+          items:
+            - "iter       () -> Iterator<Item = &OsStr>"
+            - "components () -> Iterator<Item = Component>"
+        - name: "Ancestors"
+          items:
+            - "parent    () -> Option<&Path>"
+            - "ancestors () -> Iterator<Item = &Path>"
+        - name: "Prefix / suffix"
+          items:
+            # TODO correctly use std::result::Result instead
+            - "strip_prefix () -> Result<&Path, StripPrefixError>"
+            - "starts_with (AsRef<Path>) -> bool"
+            - "ends_with   (AsRef<Path>) -> bool"
+        - name: "Construct new path"
+          items:
+            - "join (AsRef<Path>) -> PathBuf"
+            - "with_file_name (AsRef<OsStr>) -> PathBuf"
+            - "with_extension (AsRef<OsStr>) -> PathBuf"
+        - name: "Property of path target"
+          items:
+            - "exists  () -> bool"
+            - "is_file () -> bool"
+            - "is_dir  () -> bool"
+        - name: "Metadata"
+          items:
+            - "metadata () -> Result<Metadata>"
+            - "symlink_metadata () -> Result<Metadata>"
+        - name: "Misc"
+          items:
+            - "read_dir     () -> Result<Iterator<Item = Result<DirEntry>>>"
+            - "read_link    () -> Result<PathBuf>"
+            - "canonicalize () -> Result<PathBuf>"
+    - type: "PathBuf"
+      groups:
+        - items:
+            - "::new () -> PathBuf"
+            - "into_os_string () -> OsString"
+            - "into_boxed_path () -> Box<Path>"
+    - type: "&mut PathBuf"
+      groups:
+        - items:
+            - "push (AsRef<Path>)"
+            - "pop () -> bool"
+            - "set_file_name (AsRef<OsStr>)"
+            - "set_extension (AsRef<OsStr>) -> bool"
+  # File & fs2::FileExt
+  - - type: "File"
+      impls:
+        - "Read"
+        - "Write"
+        - "Seek"
+        - "FileExt"
+      groups:
+        - name: "Open file"
+          items:
+            - "::open   (AsRef<Path>) -> Result<File>"
+            - "::create (AsRef<Path>) -> Result<File>"
+    - type: "&File"
+      impls:
+        - "Read"
+        - "Write"
+        - "Seek"
+      groups:
+        - name: "Syncing"
+          items:
+            - "sync_all  () -> Result<()>"
+            - "sync_data () -> Result<()>"
+        - name: "Metadata"
+          items:
+            - "metadata () -> Result<Metadata>"
+            - "set_permissions (Permissions) -> Result<()>"
+        - name: "Other"
+          items:
+            - "set_len (u64) -> Result<()>"
+            - "try_clone () -> Result<File>"
+    - type: "&FileExt"
+      groups:
+        - name: "Allocation"
+          items:
+            - "allocate (u64) -> Result<()>"
+            - "allocated_size () -> Result<u64>"
+        - name: "Lock"
+          items:
+            - "unlock () -> Result<()>"
+            - "lock_shared    () -> Result<()>"
+            - "lock_exclusive () -> Result<()>"
+            - "try_lock_shared    () -> Result<()>"
+            - "try_lock_exclusive () -> Result<()>"
+  # Metadata
+  - - type: "&Metadata"
+      groups:
+        - name: "File type"
+          items:
+            - "is_dir  () -> bool"
+            - "is_file () -> bool"
+            - "file_type () -> FileType"
+        - name: "Time"
+          items:
+            - "created  () -> Result<SystemTime>"
+            - "modified () -> Result<SystemTime>"
+            - "accessed () -> Result<SystemTime>"
+        - name: "Misc"
+          items:
+            - "len () -> u64"
+            - "permissions () -> Permissions"
+
+trait_impls:
+  - pat: "AsRef<Path>"
+    impls:
+      - "&str"
+      - "&Path"
+      - "&OsStr"
+  - pat: "AsRef<OsStr>"
+    impls:
+      - "&str"
+      - "&OsStr"
+      - "&Path"
+
+references:
+  - kind: trait
+    names:
+      - "fs2::FileExt"
+      - "std::convert::AsRef"
+      - "std::fmt::Display"
+      - "std::io::Read"
+      - "std::io::Seek"
+      - "std::io::Write"
+      - "std::iter::Iterator"
+  - kind: enum
+    names:
+      - "std::borrow::Cow"
+      - "std::io::SeekFrom"
+      - "std::option::Option"
+      - "std::path::Component"
+  - kind: struct
+    names:
+      - "fs2::FsStats"
+      - "std::boxed::Box"
+      - "std::ffi::OsStr"
+      - "std::ffi::OsString"
+      - "std::fs::DirEntry"
+      - "std::fs::File"
+      - "std::fs::FileType"
+      - "std::fs::Metadata"
+      - "std::fs::Permissions"
+      - "std::path::Path"
+      - "std::path::PathBuf"
+      - "std::path::StripPrefixError"
+      - "std::string::String"
+      - "std::time::SystemTime"
+      - "std::vec::Vec"
+  - kind: type
+    names:
+      - "std::io::Result"
