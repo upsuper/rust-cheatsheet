@@ -170,7 +170,14 @@ fn tuple_type<'a>() -> parser_str_to_iter_token!('a) {
         attempt(wrap("()", Primitive::Unit)).map(Either2::One),
         chain3(
             wrap_start("(", Primitive::TupleStart),
-            nested_type_like_list(),
+            choice((
+                attempt(chain2(
+                    type_like(),
+                    text((spaces(), char(','), spaces(), string("..."), spaces())),
+                ))
+                .map(|tokens| Either2::One(iter::once(Token::Nested(tokens.collect())))),
+                nested_type_like_list().map(Either2::Two),
+            )),
             wrap_end(")", Primitive::TupleEnd),
         )
         .map(Either2::Two),
@@ -442,6 +449,7 @@ mod tests {
         // Tuple-like
         "()" => [@()],
         "(Foo, &Bar)" => [@(^Foo ", " ^[&"" ^Bar])],
+        "(Foo, ...)" => [@(^Foo ", ...")],
         // Range
         "usize.. usize" => [^[@usize ~Range " " @usize]],
         "usize..=usize" => [^[@usize ~RangeInclusive @usize]],
