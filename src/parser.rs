@@ -227,7 +227,8 @@ fn range_token(s: &str, range: Range) -> impl Iterator<Item = Token<'_>> {
 }
 
 fn named_type<'a>() -> parser_str_to_iter_token!('a) {
-    chain2(
+    chain3(
+        optional_tokens(lex("dyn ")),
         named_type_base().map(|ty| iter::once(Token::Type(ty.collect()))),
         // Associated items
         many::<TokenStream<'_>, _>(attempt(chain2(
@@ -430,12 +431,14 @@ mod tests {
         "Foo" => [^Foo],
         "Option<Foo>" => [^[Option "<" ^Foo ">"]],
         "Foo::Err" => [^[^Foo "::" +Err]],
+        "Box<dyn Foo>" => [^[Box "<" ^["dyn " ^Foo] ">"]],
         // References
         "&Foo" => [^[&"" ^Foo]],
         "&'a Foo" => [^[&"'a" " " ^Foo]],
         "&mut Foo" => [^[&"mut" " " ^Foo]],
         "&mut 'a Foo" => [^[&"mut 'a" " " ^Foo]],
         "&[Foo]" => [^[&"" @[^Foo]]],
+        "&dyn Foo" => [^[&"" ^["dyn " ^Foo]]],
         // Tuple-like
         "()" => [@()],
         "(Foo, &Bar)" => [@(^Foo ", " ^[&"" ^Bar])],
