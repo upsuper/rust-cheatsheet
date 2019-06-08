@@ -64,7 +64,15 @@ impl<'a> Generator<'a> {
             .map(|trait_impl| {
                 let pat = parse_type(&trait_impl.pat);
                 let generic = trait_impl.generic.as_ref().map(String::as_str);
-                let impls = trait_impl.impls.iter().map(|ty| parse_type(ty)).collect();
+                let impls = trait_impl
+                    .impls
+                    .iter()
+                    .map(|impl_| {
+                        parser::parse_trait_impl(impl_)
+                            .map_err(|_| format!("failed to parse trait impl: {}", impl_))
+                            .unwrap()
+                    })
+                    .collect();
                 TraitImpl {
                     pat,
                     generic,
