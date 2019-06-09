@@ -100,7 +100,7 @@ fn single_where_constraint<'a>() -> parser_str_to_iter_token!('a) {
     chain3(
         single_type_like(),
         lex(":"),
-        sep1_by_lex(single_type_like, "+"),
+        sep1_by_lex(simple_named_type, "+"),
     )
 }
 
@@ -242,18 +242,27 @@ fn range_token(s: &str, range: Range) -> impl Iterator<Item = Token<'_>> {
 }
 
 fn named_type<'a>() -> parser_str_to_iter_token!('a) {
-    chain3(
+    chain4(
         optional_tokens(lex("dyn ")),
-        named_type_base().map(|ty| iter::once(Token::Type(ty.collect()))),
+        simple_named_type(),
         // Associated items
         many::<TokenStream<'_>, _>(attempt(chain2(
             lex("::"),
             identifier_str().map(Token::AssocType).map(iter::once),
         ))),
+        // Additional bounds
+        optional_tokens(chain2(lex("+"), sep1_by_lex(simple_named_type, "+"))),
     )
 }
 
-fn named_type_base<'a>() -> parser_str_to_iter_token!('a) {
+// Add an extra wrapper for this parser so that we don't have too deep type name.
+parser! {
+    fn simple_named_type['a]()(&'a str) -> BoxedTokenIter<'a> {
+        simple_named_type_inner()
+    }
+}
+
+fn simple_named_type_inner<'a>() -> parser_str_to!('a, BoxedTokenIter<'a>) {
     chain2(
         // Name
         identifier_str().map(|ident| {
@@ -270,6 +279,7 @@ fn named_type_base<'a>() -> parser_str_to_iter_token!('a) {
             text((spaces(), char('>'))),
         )),
     )
+    .map(|ty| to_boxed_iter(iter::once(Token::Type(ty.collect()))))
 }
 
 fn to_type_token<'a>(inner: parser_str_to_iter_token!('a)) -> parser_str_to!('a, Token<'a>) {
@@ -447,6 +457,9 @@ mod tests {
         "Option<Foo>" => [^[Option "<" ^Foo ">"]],
         "Foo::Err" => [^[^Foo "::" +Err]],
         "Box<dyn Foo>" => [^[Box "<" ^["dyn " ^Foo] ">"]],
+        "Iterator<Item = T> + Add<Rhs = Self> + Clone" => [
+            ^[^[Iterator "<" +Item " = " ^T ">"] " + " ^[Add "<" +Rhs " = " ^Self ">"] " + " ^Clone]
+        ],
         // References
         "&Foo" => [^[&"" ^Foo]],
         "&'a Foo" => [^[&"'a" " " ^Foo]],
