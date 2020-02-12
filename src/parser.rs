@@ -65,7 +65,7 @@ macro_rules! parser_str_to_iter_token {
 
 macro_rules! parser_str_to {
     ($a:lifetime, $ty:ty) => {
-        impl Parser<Input = &$a str, Output = $ty>
+        impl Parser<&$a str, Output = $ty>
     }
 }
 
@@ -108,7 +108,7 @@ type BoxedTokenIter<'a> = Box<dyn Iterator<Item = Token<'a>> + 'a>;
 
 // Add an extra wrapper for this parser so that it can be invoked recursively.
 parser! {
-    fn type_like['a]()(&'a str) -> BoxedTokenIter<'a> {
+    fn type_like['a]()(&'a str) -> BoxedTokenIter<'a> where [] {
         type_like_inner()
     }
 }
@@ -119,7 +119,7 @@ fn type_like_inner<'a>() -> parser_str_to!('a, BoxedTokenIter<'a>) {
 
 // Add an extra wrapper for this parser so that we don't have too deep type name.
 parser! {
-    fn single_type_like['a]()(&'a str) -> BoxedTokenIter<'a> {
+    fn single_type_like['a]()(&'a str) -> BoxedTokenIter<'a> where [] {
         single_type_like_inner()
     }
 }
@@ -246,7 +246,7 @@ fn named_type<'a>() -> parser_str_to_iter_token!('a) {
         optional_tokens(lex("dyn ")),
         simple_named_type(),
         // Associated items
-        many::<TokenStream<'_>, _>(attempt(chain2(
+        many::<TokenStream<'_>, _, _>(attempt(chain2(
             lex("::"),
             identifier_str().map(Token::AssocType).map(iter::once),
         ))),
@@ -257,7 +257,7 @@ fn named_type<'a>() -> parser_str_to_iter_token!('a) {
 
 // Add an extra wrapper for this parser so that we don't have too deep type name.
 parser! {
-    fn simple_named_type['a]()(&'a str) -> BoxedTokenIter<'a> {
+    fn simple_named_type['a]()(&'a str) -> BoxedTokenIter<'a> where [] {
         simple_named_type_inner()
     }
 }
@@ -333,12 +333,12 @@ fn sep1_by_lex<'a, P, I>(
     sep: &'static str,
 ) -> parser_str_to_iter_token!('a)
 where
-    P: Parser<Input = &'a str, Output = I>,
+    P: Parser<&'a str, Output = I>,
     I: Iterator<Item = Token<'a>>,
 {
     chain2(
         parser_fn(),
-        many::<TokenStream<'a>, _>(attempt(chain2(lex(sep), parser_fn()))),
+        many::<TokenStream<'a>, _, _>(attempt(chain2(lex(sep), parser_fn()))),
     )
 }
 
@@ -385,13 +385,11 @@ fn maybe_spaces<'a>() -> parser_str_to_iter_token!('a) {
     })
 }
 
-fn text<'a>(inner: impl Parser<Input = &'a str>) -> parser_str_to_iter_token!('a) {
+fn text<'a>(inner: impl Parser<&'a str>) -> parser_str_to_iter_token!('a) {
     text_token(inner).map(iter::once)
 }
 
-fn text_token<'a>(
-    inner: impl Parser<Input = &'a str>,
-) -> impl Parser<Input = &'a str, Output = Token<'a>> {
+fn text_token<'a>(inner: impl Parser<&'a str>) -> impl Parser<&'a str, Output = Token<'a>> {
     recognize(inner).map(Token::Text)
 }
 
