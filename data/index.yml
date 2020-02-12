@@ -27,16 +27,20 @@ main:
             - "and_then ((T) -> Option<U>) -> Option<U>"
             - "or (Option<T>) -> Option<T>"
             - "or_else (() -> Option<T>) -> Option<T>"
+            - "xor (Option<T>) -> Option<T>"
     - type: "Option<&T>"
       groups:
         - name: "Cloning inner"
           items:
             - "cloned () -> Option<T> where T: Clone"
             - "copied () -> Option<T> where T: Copy"
+    - type: "Option<Option<T>>"
+      groups:
+        - items:
+            - "flatten () -> Option<T>"
     - type: "Option<Result<T, E>>"
       groups:
-        - name: "Transposing"
-          items:
+        - items:
             - "transpose () -> Result<Option<T>, E>"
     - type: "&Option<T>"
       groups:
@@ -48,12 +52,18 @@ main:
           items:
             - "as_ref () -> Option<&T>"
             - "iter () -> Iterator<&T>"
+            - |-
+              as_deref () -> Option<&U>
+              where T: Deref<Target = U>
     - type: "&mut Option<T>"
       groups:
         - name: "To inner mutable reference"
           items:
             - "as_mut () -> Option<&mut T>"
             - "iter_mut () -> Iterator<&mut T>"
+            - |-
+              as_deref_mut () -> Option<&mut U>
+              where T: DerefMut + Deref<Target = U>
         - name: "Mutation"
           items:
             - "take () -> Option<T>"
@@ -77,6 +87,8 @@ main:
           items:
             - "map ((T) -> U) -> Result<U, E>"
             - "map_err ((E) -> F) -> Result<T, F>"
+            - "map_or (U, (T) -> U) -> U"
+            - "map_or_else ((E) -> U, (T) -> U) -> U"
         - name: "Conditioning"
           items:
             - "and (Result<U, E>) -> Result<U, E>"
@@ -173,6 +185,7 @@ main:
         - name: "Cloning inner"
           items:
             - "cloned () -> Iterator<T> where T: Clone"
+            - "copied () -> Iterator<T> where T: Copy"
     - type: "&mut Iterator<Item = T>"
       groups:
         - name: "Finding and positioning"
@@ -504,6 +517,8 @@ references:
       - "std::iter::Product"
       - "std::iter::Sum"
       - "std::marker::Copy"
+      - "std::ops::Deref"
+      - "std::ops::DerefMut"
       - "std::ops::RangeBounds"
       - "std::ops::Try"
       - "std::slice::SliceIndex"
