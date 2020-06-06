@@ -211,6 +211,7 @@ main:
           items:
             - "empty () -> Iterator<Item = T>"
             - "once (T) -> Iterator<Item = T>"
+            - "once_with (() -> T) -> Iterator<Item = T>"
             - "repeat (T) -> Iterator<Item = T> where T: Clone"
             - "repeat_with (() -> T) -> Iterator<Item = T>"
             - "from_fn (() -> Option<T>) -> Iterator<Item = T>"
