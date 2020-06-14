@@ -135,6 +135,7 @@ impl Display for Token<'_> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Primitive<'a> {
     Ref(&'a str),
+    Ptr(&'a str),
     SliceStart,
     SliceEnd,
     TupleStart,
@@ -146,7 +147,7 @@ pub enum Primitive<'a> {
 impl Display for Primitive<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Primitive::Ref(s) | Primitive::Named(s) => f.write_str(s),
+            Primitive::Ref(s) | Primitive::Ptr(s) | Primitive::Named(s) => f.write_str(s),
             Primitive::SliceStart => f.write_char('['),
             Primitive::SliceEnd => f.write_char(']'),
             Primitive::TupleStart => f.write_char('('),

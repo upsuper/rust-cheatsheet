@@ -34,6 +34,10 @@ macro_rules! tokens_impl {
         $result.push(Token::Primitive(Primitive::Ref(concat!("&", $r))));
         tokens_impl!($result $($t)*);
     };
+    ($result:ident *$r:literal $($t:tt)*) => {
+        $result.push(Token::Primitive(Primitive::Ptr(concat!("*", $r))));
+        tokens_impl!($result $($t)*);
+    };
     ($result:ident @() $($t:tt)*) => {
         $result.push(Token::Type(TokenStream(vec![
             Token::Primitive(Primitive::Unit),

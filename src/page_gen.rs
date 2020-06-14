@@ -372,6 +372,7 @@ impl<'a> Generator<'a> {
             Primitive::TupleStart | Primitive::TupleEnd => "tuple",
             Primitive::Unit => "unit",
             Primitive::Ref(_) => "reference",
+            Primitive::Ptr(_) => "pointer",
             Primitive::Named(name) => name,
         };
         let std_url = self.base.get_url_for("std").unwrap();

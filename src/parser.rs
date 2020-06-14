@@ -8,7 +8,7 @@ use combine::parser::{
     repeat::{many, skip_many1},
     Parser,
 };
-use either_n::{Either2, Either3, Either6};
+use either_n::{Either2, Either3, Either7};
 use std::iter;
 
 pub struct ParsedItem<'a> {
@@ -134,12 +134,13 @@ fn to_boxed_iter<'a, T>(iter: impl Iterator<Item = T> + 'a) -> Box<dyn Iterator<
 
 fn single_type_like_token<'a>() -> parser_str_to!('a, Token<'a>) {
     to_type_token(choice((
-        attempt(ref_type()).map(Either6::One),
-        attempt(slice_type()).map(Either6::Two),
-        attempt(fn_type()).map(Either6::Three),
-        attempt(tuple_type()).map(Either6::Four),
-        attempt(range_type()).map(Either6::Five),
-        named_type().map(Either6::Six),
+        attempt(ref_type()).map(Either7::One),
+        attempt(ptr_type()).map(Either7::Two),
+        attempt(slice_type()).map(Either7::Three),
+        attempt(fn_type()).map(Either7::Four),
+        attempt(tuple_type()).map(Either7::Five),
+        attempt(range_type()).map(Either7::Six),
+        named_type().map(Either7::Seven),
     )))
 }
 
@@ -151,6 +152,15 @@ fn ref_type<'a>() -> parser_str_to_iter_token!('a) {
             optional(attempt((spaces(), lifetime()))),
         ))
         .map(|s| iter::once(Token::Primitive(Primitive::Ref(s)))),
+        maybe_spaces(),
+        single_type_like(),
+    )
+}
+
+fn ptr_type<'a>() -> parser_str_to_iter_token!('a) {
+    chain3(
+        recognize((char('*'), choice((string("const"), string("mut")))))
+            .map(|s| iter::once(Token::Primitive(Primitive::Ptr(s)))),
         maybe_spaces(),
         single_type_like(),
     )
@@ -465,6 +475,10 @@ mod tests {
         "&mut 'a Foo" => [^[&"mut 'a" " " ^Foo]],
         "&[Foo]" => [^[&"" @[^Foo]]],
         "&dyn Foo" => [^[&"" ^["dyn " ^Foo]]],
+        // Pointers
+        "*const Foo" => [^[*"const" " " ^Foo]],
+        "*mut Foo" => [^[*"mut" " " ^Foo]],
+        "*const [Foo]" => [^[*"const" " " @[^Foo]]],
         // Tuple-like
         "()" => [@()],
         "(Foo, &Bar)" => [@(^Foo ", " ^[&"" ^Bar])],
