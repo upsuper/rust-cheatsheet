@@ -12,6 +12,7 @@ main a, main span { color: rgba(0, 0, 0, var(--opacity)); }
 .primitive { color: rgba(44, 128, 147, var(--opacity)); }
 .struct { color: rgba(173, 68, 142, var(--opacity)); }
 .type, .assoc-type { color: rgba(186, 93, 0, var(--opacity)); }
+.union { color: rgba(118, 123, 39, var(--opacity)); }
 .where { color: rgba(78, 76, 76, var(--opacity)); }
 footer {
   background: white;

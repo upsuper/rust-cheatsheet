@@ -71,6 +71,7 @@ pub enum Kind {
     Struct,
     Trait,
     Type,
+    Union,
 }
 
 impl Kind {
@@ -81,6 +82,7 @@ impl Kind {
             Kind::Struct => "struct",
             Kind::Trait => "trait",
             Kind::Type => "type",
+            Kind::Union => "union",
         }
     }
 }
