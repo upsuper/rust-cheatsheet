@@ -63,7 +63,7 @@ impl<'a> Generator<'a> {
             .iter()
             .map(|trait_impl| {
                 let pat = parse_type(&trait_impl.pat);
-                let generic = trait_impl.generic.as_ref().map(String::as_str);
+                let generic = trait_impl.generic.as_deref();
                 let impls = trait_impl
                     .impls
                     .iter()
@@ -161,7 +161,7 @@ impl<'a> Generator<'a> {
         let url = build_path_url(self.base, &path);
         PartInfo {
             title: &m.name,
-            base_url: url.into(),
+            base_url: url,
             constraints: None,
             groups: &m.groups,
             fn_type: FunctionType::Function,
