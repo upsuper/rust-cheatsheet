@@ -345,6 +345,13 @@ main:
             - "reserve (usize)"
             - "reserve_exact (usize)"
             - "shrink_to_fit ()"
+    - mod: "slice"
+      path: "std::slice"
+      groups:
+        - name: "Creating slice from reference"
+          items:
+            - "from_ref (&T) -> &[T]"
+            - "from_mut (&mut T) -> &mut [T]"
   # String-related
   - - type: "&[u8]"
       groups:
