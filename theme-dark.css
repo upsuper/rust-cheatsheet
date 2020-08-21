@@ -1,0 +1,27 @@
+body, .impls h4, .impls ul {
+  color: #ddd;
+  background: #353535;
+}
+.group-title {
+  color: #8d8d8b;
+}
+main a, main span { color: rgba(221, 221, 221, var(--opacity)); }
+.method, .fn { color: rgba(43, 171, 99, var(--opacity)); }
+.trait { color: rgba(183, 140, 242, var(--opacity)); }
+.enum { color: rgba(130, 176, 137, var(--opacity)); }
+.primitive { color: rgba(67, 174, 199, var(--opacity)); }
+.struct { color: rgba(45, 191, 184, var(--opacity)); }
+.type, .assoc-type { color: rgba(255, 127, 0, var(--opacity)); }
+.union { color: rgba(166, 174, 55, var(--opacity)); }
+.where { color: rgba(221, 221, 221, var(--opacity)); }
+footer {
+  background: #353535;
+  color: #ccc;
+}
+footer, footer li:last-child {
+  border-color: #999;
+}
+footer li.on a {
+  color: #333;
+  background: #ccc;
+}
