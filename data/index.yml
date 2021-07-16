@@ -68,6 +68,7 @@ main:
           items:
             - "take () -> Option<T>"
             - "replace (T) -> Option<T>"
+            - "insert (T) -> &mut T"
             - "get_or_insert (T) -> &mut T"
             - "get_or_insert_with (() -> T) -> &mut T"
     - type: "Result<T, E>"
