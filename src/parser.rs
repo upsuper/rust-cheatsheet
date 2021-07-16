@@ -304,12 +304,12 @@ fn to_type_token<'a>(inner: parser_str_to_iter_token!('a)) -> parser_str_to!('a,
 
 #[rustfmt::skip]
 fn is_primitive(ident: &str) -> bool {
-    match ident {
+    matches!(
+        ident,
         "bool" | "char" | "str" |
         "i8" | "i16" | "i32" | "i64" | "i128" | "isize" |
-        "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => true,
-        _ => false,
-    }
+        "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
+    )
 }
 
 fn type_param<'a>() -> parser_str_to_iter_token!('a) {

@@ -59,7 +59,7 @@ fn tokens_match<'a>(
 
 impl Display for TokenStream<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.iter().map(|token| write!(f, "{}", token)).collect()
+        self.0.iter().try_for_each(|token| write!(f, "{}", token))
     }
 }
 

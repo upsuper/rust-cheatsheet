@@ -107,8 +107,7 @@ impl<'a> Generator<'a> {
     fn generate(&self, f: &mut Formatter, data: &[Vec<Part>]) -> Result {
         write!(f, "<main>")?;
         data.iter()
-            .map(|section| self.generate_section(f, &section))
-            .collect::<Result>()?;
+            .try_for_each(|section| self.generate_section(f, &section))?;
         write!(f, "</main>")?;
         Ok(())
     }
@@ -117,8 +116,7 @@ impl<'a> Generator<'a> {
         write!(f, r#"<section class="section">"#)?;
         section
             .iter()
-            .map(|part| self.generate_part(f, part))
-            .collect::<Result>()?;
+            .try_for_each(|part| self.generate_part(f, part))?;
         write!(f, "</section>")?;
         Ok(())
     }
@@ -145,8 +143,7 @@ impl<'a> Generator<'a> {
         }
         info.groups
             .iter()
-            .map(|group| self.generate_group(f, group, &info))
-            .collect::<Result>()
+            .try_for_each(|group| self.generate_group(f, group, &info))
     }
 
     fn build_part_info(&self, part: &'a Part) -> PartInfo<'a> {
@@ -232,8 +229,7 @@ impl<'a> Generator<'a> {
         group
             .items
             .iter()
-            .map(|item| self.generate_item(f, item, part_info))
-            .collect::<Result>()?;
+            .try_for_each(|item| self.generate_item(f, item, part_info))?;
         write!(f, "</ul>")?;
         Ok(())
     }
@@ -272,24 +268,20 @@ impl<'a> Generator<'a> {
     }
 
     fn generate_tokens(&self, f: &mut Formatter, tokens: &TokenStream<'_>, flags: Flags) -> Result {
-        tokens
-            .0
-            .iter()
-            .map(|token| match token {
-                Token::Text(text) => write!(f, "{}", escape(text)),
-                Token::Where => write!(f, r#"<span class="where">where</span>"#),
-                Token::Identifier(ident) => self.generate_identifier(f, ident, flags),
-                Token::AssocType(ty) => write!(f, r#"<span class="assoc-type">{}</span>"#, ty),
-                Token::Primitive(primitive) => self.generate_primitive(f, primitive, flags),
-                Token::Range(range) => self.generate_range(f, *range, flags),
-                Token::Type(ty) => self.generate_type(f, ty, flags),
-                Token::Nested(nested) => {
-                    write!(f, r#"<span class="nested">"#)?;
-                    self.generate_tokens(f, nested, flags)?;
-                    write!(f, "</span>")
-                }
-            })
-            .collect()
+        tokens.0.iter().try_for_each(|token| match token {
+            Token::Text(text) => write!(f, "{}", escape(text)),
+            Token::Where => write!(f, r#"<span class="where">where</span>"#),
+            Token::Identifier(ident) => self.generate_identifier(f, ident, flags),
+            Token::AssocType(ty) => write!(f, r#"<span class="assoc-type">{}</span>"#, ty),
+            Token::Primitive(primitive) => self.generate_primitive(f, primitive, flags),
+            Token::Range(range) => self.generate_range(f, *range, flags),
+            Token::Type(ty) => self.generate_type(f, ty, flags),
+            Token::Nested(nested) => {
+                write!(f, r#"<span class="nested">"#)?;
+                self.generate_tokens(f, nested, flags)?;
+                write!(f, "</span>")
+            }
+        })
     }
 
     fn generate_type(&self, f: &mut Formatter, tokens: &TokenStream<'_>, flags: Flags) -> Result {
@@ -313,23 +305,19 @@ impl<'a> Generator<'a> {
         write!(f, r#"<h4 class="impls-title">"#)?;
         self.generate_tokens(f, tokens, flags)?;
         write!(f, r#"</h4><ul class="impls-list">"#)?;
-        trait_impl
-            .impls
-            .iter()
-            .map(|ty| {
-                let replaced = match (trait_impl.generic, replacement) {
-                    (Some(generic), Some(replacement)) => {
-                        Some(build_tokens_with_replacement(ty, generic, replacement))
-                    }
-                    _ => None,
-                };
-                let ty = replaced.as_ref().unwrap_or(ty);
-                write!(f, "<li>")?;
-                self.generate_tokens(f, ty, flags)?;
-                write!(f, "</li>")?;
-                Ok(())
-            })
-            .collect::<Result>()?;
+        trait_impl.impls.iter().try_for_each(|ty| {
+            let replaced = match (trait_impl.generic, replacement) {
+                (Some(generic), Some(replacement)) => {
+                    Some(build_tokens_with_replacement(ty, generic, replacement))
+                }
+                _ => None,
+            };
+            let ty = replaced.as_ref().unwrap_or(ty);
+            write!(f, "<li>")?;
+            self.generate_tokens(f, ty, flags)?;
+            write!(f, "</li>")?;
+            Ok(())
+        })?;
         write!(f, "</ul></aside></span>")?;
         Ok(())
     }
