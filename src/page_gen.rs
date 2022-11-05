@@ -44,7 +44,7 @@ impl Display for PageContentWriter<'_> {
 struct Generator<'a> {
     base: &'a BaseUrlMap,
     trait_impls: Vec<TraitImpl<'a>>,
-    references: HashMap<&'a str, Reference<'a>>,
+    references: HashMap<&'a str, Reference>,
 }
 
 struct TraitImpl<'a> {
@@ -88,12 +88,12 @@ impl<'a> Generator<'a> {
                     .chain(reference.names.iter().map(move |item| {
                         let (path, name) = parse_path(&item);
                         let url = build_type_url(base, &path, kind, name);
-                        (name, Reference { kind, path, url })
+                        (name, Reference { kind, url })
                     }))
                     .chain(reference.aliases.iter().map(move |(alias, path)| {
                         let (path, name) = parse_path(&path);
                         let url = build_type_url(base, &path, kind, name);
-                        (alias.as_str(), Reference { kind, path, url })
+                        (alias.as_str(), Reference { kind, url })
                     }))
             })
             .collect();
@@ -437,9 +437,8 @@ fn build_tokens_with_replacement<'a>(
 }
 
 #[derive(Debug)]
-struct Reference<'a> {
+struct Reference {
     kind: Kind,
-    path: Box<[&'a str]>,
     url: String,
 }
 
