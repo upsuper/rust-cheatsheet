@@ -170,7 +170,10 @@ pub enum RangeToken {
 impl Display for RangeToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match self {
-            RangeToken::Range | RangeToken::RangeFrom | RangeToken::RangeFull | RangeToken::RangeTo => "..",
+            RangeToken::Range
+            | RangeToken::RangeFrom
+            | RangeToken::RangeFull
+            | RangeToken::RangeTo => "..",
             RangeToken::RangeInclusive | RangeToken::RangeToInclusive => "..=",
         })
     }
