@@ -18,4 +18,4 @@ version = "1.0.90"
 features = ["derive"]
 
 [dev-dependencies]
-pretty_assertions = "0.7.2"
+pretty_assertions = "1"
