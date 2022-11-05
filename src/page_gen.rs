@@ -2,7 +2,7 @@ use crate::input::{
     BaseUrlMap, Group, InputData, InputItem, Kind, Mod, Part, References, TraitImplPattern, Type,
 };
 use crate::parser::{self, ParsedItem};
-use crate::token::{Primitive, Range, Token, TokenStream};
+use crate::token::{Primitive, RangeToken, Token, TokenStream};
 use bitflags::bitflags;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter, Result, Write as _};
@@ -86,12 +86,12 @@ impl<'a> Generator<'a> {
                 let kind = reference.kind;
                 iter::empty()
                     .chain(reference.names.iter().map(move |item| {
-                        let (path, name) = parse_path(&item);
+                        let (path, name) = parse_path(item);
                         let url = build_type_url(base, &path, kind, name);
                         (name, Reference { kind, url })
                     }))
                     .chain(reference.aliases.iter().map(move |(alias, path)| {
-                        let (path, name) = parse_path(&path);
+                        let (path, name) = parse_path(path);
                         let url = build_type_url(base, &path, kind, name);
                         (alias.as_str(), Reference { kind, url })
                     }))
@@ -107,7 +107,7 @@ impl<'a> Generator<'a> {
     fn generate(&self, f: &mut Formatter, data: &[Vec<Part>]) -> Result {
         write!(f, "<main>")?;
         data.iter()
-            .try_for_each(|section| self.generate_section(f, &section))?;
+            .try_for_each(|section| self.generate_section(f, section))?;
         write!(f, "</main>")?;
         Ok(())
     }
@@ -367,15 +367,15 @@ impl<'a> Generator<'a> {
         format!("{}primitive.{}.html", std_url, name)
     }
 
-    fn generate_range(&self, f: &mut Formatter, range: Range, flags: Flags) -> Result {
+    fn generate_range(&self, f: &mut Formatter, range: RangeToken, flags: Flags) -> Result {
         if flags.contains(Flags::LINKIFY) {
             let name = match range {
-                Range::Range => "Range",
-                Range::RangeFrom => "RangeFrom",
-                Range::RangeFull => "RangeFull",
-                Range::RangeInclusive => "RangeInclusive",
-                Range::RangeTo => "RangeTo",
-                Range::RangeToInclusive => "RangeToInclusive",
+                RangeToken::Range => "Range",
+                RangeToken::RangeFrom => "RangeFrom",
+                RangeToken::RangeFull => "RangeFull",
+                RangeToken::RangeInclusive => "RangeInclusive",
+                RangeToken::RangeTo => "RangeTo",
+                RangeToken::RangeToInclusive => "RangeToInclusive",
             };
             write!(
                 f,

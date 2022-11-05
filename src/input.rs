@@ -29,7 +29,7 @@ pub struct BaseUrlMap(HashMap<String, String>);
 
 impl BaseUrlMap {
     pub fn get_url_for(&self, name: &str) -> Option<&str> {
-        self.0.get(name).map(String::as_str).or_else(|| match name {
+        self.0.get(name).map(String::as_str).or(match name {
             "std" => Some(DEFAULT_STD_URL),
             _ => None,
         })

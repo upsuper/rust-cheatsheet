@@ -101,7 +101,7 @@ pub enum Token<'a> {
     Primitive(Primitive<'a>),
     Identifier(&'a str),
     AssocType(&'a str),
-    Range(Range),
+    Range(RangeToken),
     Where,
 }
 
@@ -158,7 +158,7 @@ impl Display for Primitive<'_> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Range {
+pub enum RangeToken {
     Range,
     RangeFrom,
     RangeFull,
@@ -167,11 +167,11 @@ pub enum Range {
     RangeToInclusive,
 }
 
-impl Display for Range {
+impl Display for RangeToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match self {
-            Range::Range | Range::RangeFrom | Range::RangeFull | Range::RangeTo => "..",
-            Range::RangeInclusive | Range::RangeToInclusive => "..=",
+            RangeToken::Range | RangeToken::RangeFrom | RangeToken::RangeFull | RangeToken::RangeTo => "..",
+            RangeToken::RangeInclusive | RangeToken::RangeToInclusive => "..=",
         })
     }
 }

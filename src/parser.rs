@@ -1,4 +1,4 @@
-use crate::token::{Primitive, Range, Token, TokenStream};
+use crate::token::{Primitive, RangeToken, Token, TokenStream};
 use combine::error::StringStreamError;
 use combine::parser::{
     char::{alpha_num, char, letter, spaces, string},
@@ -219,12 +219,12 @@ fn range_type<'a>() -> parser_str_to_iter_token!('a) {
     )
         .and_then(|(start, op, end)| {
             let range = match (&start, op.trim(), &end) {
-                (None, "..", None) => Range::RangeFull,
-                (None, "..", Some(_)) => Range::RangeTo,
-                (None, "..=", Some(_)) => Range::RangeToInclusive,
-                (Some(_), "..", None) => Range::RangeFrom,
-                (Some(_), "..", Some(_)) => Range::Range,
-                (Some(_), "..=", Some(_)) => Range::RangeInclusive,
+                (None, "..", None) => RangeToken::RangeFull,
+                (None, "..", Some(_)) => RangeToken::RangeTo,
+                (None, "..=", Some(_)) => RangeToken::RangeToInclusive,
+                (Some(_), "..", None) => RangeToken::RangeFrom,
+                (Some(_), "..", Some(_)) => RangeToken::Range,
+                (Some(_), "..=", Some(_)) => RangeToken::RangeInclusive,
                 _ => return Err(StringStreamError::UnexpectedParse),
             };
             let start = start.into_iter().flatten();
@@ -236,7 +236,7 @@ fn range_type<'a>() -> parser_str_to_iter_token!('a) {
         })
 }
 
-fn range_token(s: &str, range: Range) -> impl Iterator<Item = Token<'_>> {
+fn range_token(s: &str, range: RangeToken) -> impl Iterator<Item = Token<'_>> {
     let start = match &s[..s.len() - s.trim_start().len()] {
         "" => None,
         spaces => Some(Token::Text(spaces)),
